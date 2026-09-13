@@ -4,13 +4,32 @@ style) and small helpers reused across every page.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import streamlit as st
 
-from config.settings import APP_NAME, APP_TAGLINE, DISCLAIMER
+from config.settings import APP_NAME, APP_TAGLINE, DISCLAIMER, BASE_DIR
 
-PRIMARY = "#B91C1C"       # safety red — used sparingly, for emergency/alerts only
-ACCENT = "#0F172A"        # deep slate — trustworthy, calm
-SURFACE = "#F8FAFC"
+# Brand palette, matched to the Crime Report.AI shield logo: a deep-blue-to-red
+# duotone (trustworthy blue for the shield/authority side, alert red for the
+# urgency side), with a white/navy neutral base for everyday readability.
+BLUE_DEEP = "#123B91"
+BLUE_BRIGHT = "#2E8FE8"
+RED_BRIGHT = "#F0432E"
+RED_DEEP = "#C81E22"
+ACCENT = "#0B1330"        # near-navy — trustworthy, calm text color
+SURFACE = "#F4F7FE"
+
+BRAND_GRADIENT = f"linear-gradient(135deg, {BLUE_DEEP} 0%, {BLUE_BRIGHT} 38%, {RED_BRIGHT} 72%, {RED_DEEP} 100%)"
+
+LOGO_PATH = BASE_DIR / "assets" / "logo.png"
+
+
+def has_logo() -> bool:
+    return LOGO_PATH.exists()
+
+
+PRIMARY = RED_DEEP  # kept for modules that still import PRIMARY directly
 
 GLOBAL_CSS = f"""
 <style>
@@ -27,33 +46,54 @@ GLOBAL_CSS = f"""
         font-size: 1.05rem;
         font-weight: 600;
         border-radius: 14px;
-        border: 1px solid #E2E8F0;
+        border: 1px solid #DCE3F5;
         transition: all 0.15s ease;
     }}
     .stButton > button:hover {{
-        border-color: {ACCENT};
+        border-color: {BLUE_DEEP};
+        transform: translateY(-1px);
+    }}
+    /* Primary CTAs (type="primary") get the full brand gradient */
+    .stButton > button[kind="primary"] {{
+        background: {BRAND_GRADIENT} !important;
+        border: none !important;
+        color: white !important;
+        box-shadow: 0 4px 14px rgba(18, 59, 145, 0.25);
+    }}
+    .stButton > button[kind="primary"]:hover {{
+        filter: brightness(1.06);
         transform: translateY(-1px);
     }}
     div[data-testid="stForm"] {{
         border: none;
         padding: 0;
     }}
+    .crai-brand-row {{
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.1rem;
+    }}
     .crai-brand {{
         font-size: 1.6rem;
         font-weight: 800;
-        color: {ACCENT};
         letter-spacing: -0.02em;
-        margin-bottom: 0;
+        margin: 0;
+        background: {BRAND_GRADIENT};
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
     }}
     .crai-tagline {{
-        color: #64748B;
+        color: #5B6A94;
         font-size: 0.95rem;
-        margin-top: -0.3rem;
+        margin-top: -0.1rem;
         margin-bottom: 1.2rem;
     }}
     .crai-card {{
         background: {SURFACE};
-        border: 1px solid #E2E8F0;
+        border: 1px solid #DCE3F5;
+        border-left: 4px solid {BLUE_BRIGHT};
         border-radius: 16px;
         padding: 1.1rem 1.3rem;
         margin-bottom: 0.9rem;
@@ -64,16 +104,16 @@ GLOBAL_CSS = f"""
         border-radius: 999px;
         font-size: 0.75rem;
         font-weight: 700;
-        background: #FEE2E2;
-        color: {PRIMARY};
+        background: #FCE4E2;
+        color: {RED_DEEP};
     }}
     .crai-badge-ok {{
         background: #DCFCE7;
         color: #166534;
     }}
     .crai-badge-ai {{
-        background: #E0E7FF;
-        color: #3730A3;
+        background: #E0E9FF;
+        color: {BLUE_DEEP};
     }}
     .crai-disclaimer {{
         font-size: 0.78rem;
@@ -83,7 +123,7 @@ GLOBAL_CSS = f"""
         margin-top: 2rem;
     }}
     .crai-emergency-btn button {{
-        background: {PRIMARY} !important;
+        background: {RED_DEEP} !important;
         color: white !important;
         border: none !important;
     }}
@@ -99,7 +139,14 @@ def inject_css():
 
 
 def brand_header(show_tagline: bool = True):
-    st.markdown(f'<p class="crai-brand">🛡️ {APP_NAME}</p>', unsafe_allow_html=True)
+    if has_logo():
+        col_logo, col_text = st.columns([1, 5], vertical_alignment="center")
+        with col_logo:
+            st.image(str(LOGO_PATH), width=56)
+        with col_text:
+            st.markdown(f'<p class="crai-brand">{APP_NAME}</p>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<p class="crai-brand">🛡️ {APP_NAME}</p>', unsafe_allow_html=True)
     if show_tagline:
         st.markdown(f'<p class="crai-tagline">{APP_TAGLINE}</p>', unsafe_allow_html=True)
 

@@ -9,13 +9,13 @@ import streamlit as st
 
 from config.settings import APP_NAME
 from database.database import init_db
-from ui.components import inject_css, top_nav, disclaimer_footer
+from ui.components import inject_css, top_nav, disclaimer_footer, has_logo, LOGO_PATH
 from ui.state import init_session
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
-st.set_page_config(page_title=APP_NAME, page_icon="🛡️", layout="centered",
-                    initial_sidebar_state="collapsed")
+st.set_page_config(page_title=APP_NAME, page_icon=str(LOGO_PATH) if has_logo() else "🛡️",
+                    layout="centered", initial_sidebar_state="collapsed")
 
 init_db()
 init_session()

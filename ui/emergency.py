@@ -6,7 +6,7 @@ from __future__ import annotations
 import streamlit as st
 
 from config.settings import EMERGENCY_NUMBER
-from ui.components import brand_header, go_to, card
+from ui.components import brand_header, go_to, card, RED_DEEP
 from ui.state import reset_draft
 
 
@@ -23,7 +23,7 @@ def render():
         f'<div class="crai-emergency-btn"><a href="tel:{EMERGENCY_NUMBER}" '
         f'style="text-decoration:none;">'
         f'<button style="width:100%;min-height:3.4rem;font-size:1.15rem;'
-        f'font-weight:700;border-radius:14px;border:none;background:#B91C1C;'
+        f'font-weight:700;border-radius:14px;border:none;background:{RED_DEEP};'
         f'color:white;">📞 CALL EMERGENCY SERVICES ({EMERGENCY_NUMBER})</button>'
         f'</a></div>',
         unsafe_allow_html=True,

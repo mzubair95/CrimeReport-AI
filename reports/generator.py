@@ -32,11 +32,11 @@ def to_json(report: dict, report_id: str) -> str:
 def _styles():
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="ReportTitle", fontSize=20, leading=24,
-                               textColor=colors.HexColor("#0F172A"), spaceAfter=4))
+                               textColor=colors.HexColor("#0B1330"), spaceAfter=4))
     styles.add(ParagraphStyle(name="ReportSubtitle", fontSize=10,
                                textColor=colors.HexColor("#64748B"), spaceAfter=16))
     styles.add(ParagraphStyle(name="SectionHeading", fontSize=13, leading=16,
-                               textColor=colors.HexColor("#B91C1C"), spaceBefore=14, spaceAfter=6))
+                               textColor=colors.HexColor("#123B91"), spaceBefore=14, spaceAfter=6))
     styles.add(ParagraphStyle(name="Body", fontSize=10.5, leading=15))
     styles.add(ParagraphStyle(name="Small", fontSize=8, leading=11,
                                textColor=colors.HexColor("#64748B")))
