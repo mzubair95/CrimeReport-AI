@@ -4,7 +4,7 @@ Crime classification (section 11) and free-text field extraction (section 7).
 from __future__ import annotations
 
 from config.settings import CRIME_CATEGORIES
-from ai import gemini
+from ai import llm as gemini  # routed through ai/llm.py — backend set by LLM_PROVIDER
 from ai.schemas import IncidentExtraction, ClassificationResult, safe_validate
 
 _CATEGORY_LIST = ", ".join(CRIME_CATEGORIES)

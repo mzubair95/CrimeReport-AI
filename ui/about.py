@@ -4,7 +4,7 @@ from __future__ import annotations
 import streamlit as st
 
 from config.settings import DISCLAIMER
-from ai import gemini
+from ai import llm
 from rag import pinecone_client
 from ui.components import brand_header, go_to
 
@@ -20,8 +20,8 @@ by text, voice, photo, or video — and uses AI to ask the right follow-up
 questions, classify the incident, and produce a structured report.
 
 ### What this app does
-- Uses Google Gemini to understand descriptions, analyze images/video, and
-  generate follow-up questions.
+- Uses an AI model (Google Gemini or xAI Grok, configurable) to understand
+  descriptions, analyze images/video, and generate follow-up questions.
 - Uses a Retrieval-Augmented Generation (RAG) system backed by Pinecone to
   ground its questions in general reporting guidance.
 - Generates a downloadable PDF and JSON report and submits it to a **demo**
@@ -47,7 +47,8 @@ questions, classify the incident, and produce a structured report.
 
     st.divider()
     st.markdown("**System status**")
-    st.write(f"- Gemini AI: {'✅ configured' if gemini.is_available() else '⚠️ not configured'}")
+    st.write(f"- LLM ({llm.provider_name()}): "
+             f"{'✅ configured' if llm.is_available() else '⚠️ not configured'}")
     st.write(f"- Pinecone RAG: {'✅ configured' if pinecone_client.is_available() else '⚠️ not configured'}")
 
     st.divider()

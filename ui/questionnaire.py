@@ -9,7 +9,6 @@ import logging
 
 import streamlit as st
 
-from ai import gemini
 from ai.question_engine import next_question
 from ui.components import brand_header, go_to, progress_bar
 from ui.state import draft

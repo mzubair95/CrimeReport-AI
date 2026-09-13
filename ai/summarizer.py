@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import logging
 
-from ai import gemini
+from ai import llm as gemini  # routed through ai/llm.py — backend set by LLM_PROVIDER
 
 logger = logging.getLogger("crime_report_ai.summarizer")
 
@@ -30,7 +30,7 @@ Data:
 """
     try:
         return gemini.generate_text(prompt, temperature=0.3)
-    except gemini.GeminiUnavailable as exc:
+    except gemini.LLMUnavailable as exc:
         logger.warning("Summary generation unavailable: %s", exc)
         desc = report_state.get("description", "")
         return (

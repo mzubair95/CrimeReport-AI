@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from ai import gemini
+from ai import llm as gemini  # routed through ai/llm.py — backend set by LLM_PROVIDER
 from input.image import process_image
 from input.video import process_video
 from ui.components import brand_header, go_to, progress_bar
@@ -99,6 +99,6 @@ def _process_extra_files(files):
                     entry["ai_analysis"] = v.summary
                 else:
                     entry["ai_analysis"] = "Document attached as supporting evidence (not AI-analyzed)."
-            except gemini.GeminiUnavailable:
+            except gemini.LLMUnavailable:
                 entry["ai_analysis"] = "AI analysis unavailable right now."
             d["evidence"].append(entry)

@@ -1,5 +1,5 @@
 """
-Image and video understanding via Gemini multimodal input (sections 9-10).
+Image and video understanding via multimodal LLM input (sections 9-10).
 
 Strict rule enforced in the prompts: only describe what is visibly present.
 Never claim identity, exact location/time, or criminal intent.
@@ -10,7 +10,7 @@ import io
 import logging
 from typing import Optional
 
-from ai import gemini
+from ai import llm as gemini  # routed through ai/llm.py — backend set by LLM_PROVIDER
 from ai.schemas import ImageAnalysis, VideoAnalysis, safe_validate
 
 logger = logging.getLogger("crime_report_ai.vision")
@@ -44,7 +44,7 @@ def analyze_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> ImageAna
             system_instruction=_IMAGE_RULES,
             as_json=True,
         )
-    except gemini.GeminiUnavailable as exc:
+    except gemini.LLMUnavailable as exc:
         logger.warning("Image analysis unavailable: %s", exc)
         return ImageAnalysis(notes="AI image analysis unavailable right now.")
     result = safe_validate(ImageAnalysis, data)
@@ -62,7 +62,7 @@ def analyze_video_direct(video_bytes: bytes, mime_type: str = "video/mp4") -> Op
             as_json=True,
             retries=0,
         )
-    except gemini.GeminiUnavailable as exc:
+    except gemini.LLMUnavailable as exc:
         logger.info("Direct video analysis failed, will fall back to frames: %s", exc)
         return None
     return safe_validate(VideoAnalysis, data)

@@ -6,7 +6,6 @@ import logging
 
 import streamlit as st
 
-from ai import gemini
 from ai.summarizer import build_incident_summary
 from database.database import submit_report
 from reports.generator import to_json, to_pdf

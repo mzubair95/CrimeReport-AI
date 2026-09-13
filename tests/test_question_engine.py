@@ -1,6 +1,6 @@
 """
 Tests for question_engine + schema validation. Falls back gracefully (and
-skips the live-Gemini assertions) if GEMINI_API_KEY isn't set, so CI without
+skips the live-LLM assertions) if no LLM_PROVIDER key is set, so CI without
 secrets still runs the offline checks.
 """
 import sys
@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ai.schemas import Question, QuestionnaireStep, safe_validate
-from ai import gemini
+from ai import llm
 
 
 def test_safe_validate_rejects_bad_data():
@@ -38,7 +38,7 @@ def test_question_engine_live_or_skips():
         qa_history=[],
     )
     assert isinstance(step, QuestionnaireStep)
-    if not gemini.is_available():
+    if not llm.is_available():
         # Without a configured key we still expect the safe fallback question.
         assert step.next_question is not None or step.complete
 

@@ -11,15 +11,29 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ---- Secrets / API config (never hard-code these) ----
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "")
-PINECONE_INDEX = os.getenv("PINECONE_INDEX", "crime-report-ai")
+# Which LLM backend powers classification/questions/summaries/vision (section 36:
+# the LLM must be swappable without rewriting the app). "gemini" (default) or "grok".
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
 
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_TEXT_MODEL = os.getenv("GEMINI_TEXT_MODEL", "gemini-2.5-flash")
 GEMINI_VISION_MODEL = os.getenv("GEMINI_VISION_MODEL", "gemini-2.5-flash")
 
+GROK_API_KEY = os.getenv("GROK_API_KEY", "")
+GROK_BASE_URL = os.getenv("GROK_BASE_URL", "https://api.x.ai/v1")
+GROK_TEXT_MODEL = os.getenv("GROK_TEXT_MODEL", "grok-4.6")
+GROK_VISION_MODEL = os.getenv("GROK_VISION_MODEL", "grok-4.6")
+
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "")
+PINECONE_INDEX = os.getenv("PINECONE_INDEX", "crime-report-ai")
+
 EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers")
 EMBEDDING_DIMENSION = 384  # all-MiniLM-L6-v2 output size; update if provider changes
+
+# Local, free, offline speech-to-text for voice input (section 8/36) — kept
+# independent of whichever LLM_PROVIDER is chosen, since not every LLM API
+# accepts raw audio the way Gemini does. "" disables transcription gracefully.
+WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")
 
 # ---- App-level config ----
 APP_NAME = "Crime Report.AI"
@@ -81,6 +95,14 @@ DISCLAIMER = (
 
 def gemini_configured() -> bool:
     return bool(GEMINI_API_KEY)
+
+
+def grok_configured() -> bool:
+    return bool(GROK_API_KEY)
+
+
+def llm_configured() -> bool:
+    return grok_configured() if LLM_PROVIDER == "grok" else gemini_configured()
 
 
 def pinecone_configured() -> bool:

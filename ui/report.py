@@ -9,7 +9,7 @@ import logging
 
 import streamlit as st
 
-from ai import gemini
+from ai import llm as gemini  # routed through ai/llm.py — backend set by LLM_PROVIDER
 from ai.classifier import extract_incident_facts, classify_incident
 from input.voice import transcribe_audio
 from input.image import process_image
@@ -46,14 +46,16 @@ def render():
         st.write("Record your statement — you'll be able to review and edit the text.")
         audio = st.audio_input("Tap to record", key="voice_recording")
         if audio is not None and st.session_state.get("_last_audio_id") != id(audio):
-            with st.spinner("Transcribing your statement..."):
+            with st.spinner("Transcribing your statement... (first use loads the local "
+                              "speech-to-text model, which can take a moment)"):
                 try:
                     transcript = transcribe_audio(audio.getvalue(), mime_type="audio/wav")
-                except Exception as exc:
+                except Exception:
                     logger.exception("Transcription failed")
                     transcript = ""
-                    st.error("We're temporarily unable to transcribe audio. "
-                              "Please try again or continue using text input.")
+            if not transcript:
+                st.error("We're temporarily unable to transcribe audio. "
+                          "Please try again or continue using text input.")
             st.session_state.voice_transcript = transcript
             st.session_state["_last_audio_id"] = id(audio)
 
@@ -110,9 +112,9 @@ def _handle_continue(photos_files, video_file):
 
     if not gemini.is_available():
         st.warning(
-            "⚠️ AI features are not fully configured (GEMINI_API_KEY missing), so "
-            "classification and follow-up questions will be limited. You can still "
-            "complete and submit a basic report.",
+            f"⚠️ AI features are not fully configured ({gemini.provider_name().upper()} "
+            "API key missing), so classification and follow-up questions will be "
+            "limited. You can still complete and submit a basic report.",
             icon="⚠️",
         )
 
@@ -149,7 +151,7 @@ def _handle_continue(photos_files, video_file):
                 description,
                 extra_context=" ".join(e.get("ai_analysis", "") for e in evidence),
             ) if description else None
-        except gemini.GeminiUnavailable:
+        except gemini.LLMUnavailable:
             facts, classification = None, None
             st.error("We're temporarily unable to reach the AI service. "
                       "Please try again shortly.")

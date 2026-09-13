@@ -81,14 +81,29 @@ tracking ID returned.
 |---|---|
 | Frontend/UI | Streamlit (responsive, mobile-friendly) |
 | Backend | Python 3.12 |
-| LLM / multimodal AI | Google Gemini (`google-genai` SDK) |
+| LLM / multimodal AI | Google Gemini (`google-genai` SDK) **or** xAI Grok (OpenAI-compatible endpoint) — set via `LLM_PROVIDER` |
 | Vector database | Pinecone (`pinecone` SDK v5+) |
 | Embeddings | sentence-transformers (`all-MiniLM-L6-v2`), swappable for Gemini embeddings |
+| Speech-to-text | faster-whisper (local, free, offline — independent of `LLM_PROVIDER`) |
 | Document parsing | pypdf, python-docx |
 | Report generation | reportlab (PDF), built-in `json` |
 | Config | python-dotenv, environment variables |
 | Database | SQLite (demo backend) |
 | Video frame extraction | OpenCV (fallback path) |
+
+### Swapping the LLM (section 36: everything is modular)
+
+Every AI call in the app goes through [ai/llm.py](ai/llm.py), which picks a
+backend based on `LLM_PROVIDER` in `.env`:
+
+- `LLM_PROVIDER=gemini` (default) → [ai/gemini.py](ai/gemini.py), using the `google-genai` SDK.
+- `LLM_PROVIDER=grok` → [ai/grok.py](ai/grok.py), using xAI's OpenAI-compatible `/v1/chat/completions` endpoint.
+
+Grok's chat endpoint accepts text and images but not raw audio/video the way
+Gemini does — video already falls back to frame extraction either way
+(`input/video.py`), and voice transcription always runs locally via
+faster-whisper (`input/voice.py`), so switching providers doesn't break
+either feature.
 
 ## Project Structure
 
@@ -121,7 +136,9 @@ cp .env.example .env
 ```
 
 ```text
+LLM_PROVIDER=gemini                 # or "grok"
 GEMINI_API_KEY=your-gemini-key      # https://aistudio.google.com/apikey
+# GROK_API_KEY=your-grok-key        # https://console.x.ai (only if LLM_PROVIDER=grok)
 PINECONE_API_KEY=your-pinecone-key  # https://app.pinecone.io
 PINECONE_INDEX=crime-report-ai
 ```

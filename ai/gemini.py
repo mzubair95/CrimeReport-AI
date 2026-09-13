@@ -13,6 +13,7 @@ import time
 from typing import Any, Optional
 
 from config import settings
+from ai.errors import LLMUnavailable
 
 logger = logging.getLogger("crime_report_ai.gemini")
 
@@ -37,8 +38,7 @@ def _get_client():
     return _client
 
 
-class GeminiUnavailable(RuntimeError):
-    """Raised when Gemini cannot be reached / is not configured."""
+GeminiUnavailable = LLMUnavailable  # backward-compat alias
 
 
 def is_available() -> bool:
