@@ -1,0 +1,32 @@
+General steps for reporting a non-emergency incident:
+1. Ensure your immediate safety first. If you are in danger or need medical
+   help, contact emergency services before completing any written report.
+2. Write down or record what happened as soon as possible while details are
+   fresh: what occurred, where, when, and who was involved (if known).
+3. Preserve evidence rather than altering it — do not delete messages,
+   move damaged items more than necessary, or edit photos before submitting
+   them as evidence.
+4. Note any witnesses and how to reach them, if they are willing to be
+   contacted.
+5. Gather supporting evidence: photographs of damage or the scene, screenshots
+   of messages, receipts or serial numbers for stolen items, and any relevant
+   documents.
+6. Provide accurate contact information so the relevant authority can follow
+   up with you if needed.
+7. Keep a copy of your report and any reference/tracking number you are
+   given.
+
+What evidence is generally useful (this varies by incident type):
+- Photographs of damage, the scene, or visible injuries
+- Screenshots of threatening or fraudulent messages
+- Serial numbers, IMEI numbers, or receipts for stolen items
+- Names or descriptions of witnesses
+- Timestamps: when the incident happened and when it was discovered
+- Any video footage (e.g. doorbell camera, dashcam) if available
+
+Emergency vs non-emergency: An emergency is a situation involving immediate
+danger to life, an ongoing crime, a medical emergency, or a fire. In an
+emergency, contact emergency services immediately by phone rather than
+filling out a written report first. A non-emergency report is appropriate
+when the incident has already concluded, no one is in immediate danger, and
+you are documenting something for the record or for follow-up investigation.

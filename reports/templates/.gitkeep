@@ -1,0 +1,2 @@
+Reserved for future report template assets. PDF layout is currently generated
+programmatically in reports/generator.py using reportlab.

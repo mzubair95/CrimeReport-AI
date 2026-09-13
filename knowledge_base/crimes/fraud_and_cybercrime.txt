@@ -1,0 +1,29 @@
+Fraud involves deception for financial or personal gain, such as scams,
+identity theft, fake investment schemes, or unauthorized use of payment
+information. A useful fraud report includes: how the contact/deception
+occurred (phone, email, in person, a fake website), what was requested or
+taken (money, personal information, payment details), the amount involved if
+known, and any account or transaction identifiers the victim already has
+(without needing to disclose full card or account numbers within this app).
+
+Cybercrime includes hacking, unauthorized account access, ransomware,
+phishing, online impersonation, and other crimes carried out through computer
+systems or the internet. Useful details include which account/service was
+affected, when unusual activity was first noticed, whether any suspicious
+links or attachments were opened, and whether the same password is reused
+elsewhere (which should be changed as a precaution regardless of reporting
+status).
+
+Vandalism and property damage refer to the intentional damaging or destruction
+of property that does not belong to the person responsible, such as graffiti,
+broken windows, or damaged vehicles. Useful details include a description of
+the damage, an approximate cost/extent, and whether the responsible party is
+known or was seen.
+
+Missing person reports involve a person whose whereabouts are unknown and
+who is believed to be at risk. Time-sensitive details matter most: when and
+where the person was last seen, what they were wearing, any known risk
+factors (medical condition, age, prior history), and recent
+communication. In many jurisdictions there is no mandatory waiting period to
+report a missing person, especially a minor or a vulnerable adult — reporting
+promptly is generally recommended rather than waiting.

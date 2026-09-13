@@ -1,0 +1,87 @@
+"""
+Central configuration. Everything secret comes from environment variables
+(loaded from .env via python-dotenv), never hard-coded.
+"""
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# ---- Secrets / API config (never hard-code these) ----
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "")
+PINECONE_INDEX = os.getenv("PINECONE_INDEX", "crime-report-ai")
+
+GEMINI_TEXT_MODEL = os.getenv("GEMINI_TEXT_MODEL", "gemini-2.5-flash")
+GEMINI_VISION_MODEL = os.getenv("GEMINI_VISION_MODEL", "gemini-2.5-flash")
+
+EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers")
+EMBEDDING_DIMENSION = 384  # all-MiniLM-L6-v2 output size; update if provider changes
+
+# ---- App-level config ----
+APP_NAME = "Crime Report.AI"
+APP_TAGLINE = "Report what happened. Let AI guide the rest."
+
+DATA_DIR = BASE_DIR / "data"
+UPLOADS_DIR = DATA_DIR / "uploads"
+REPORTS_DIR = DATA_DIR / "reports"
+DB_DIR = DATA_DIR / "db"
+for _d in (DATA_DIR, UPLOADS_DIR, REPORTS_DIR, DB_DIR):
+    _d.mkdir(parents=True, exist_ok=True)
+
+DB_PATH = DB_DIR / "crime_report.sqlite3"
+
+# Controlled classification categories (section 11)
+CRIME_CATEGORIES = [
+    "Theft", "Robbery", "Burglary", "Assault", "Harassment", "Threat",
+    "Fraud", "Cybercrime", "Missing Person", "Vandalism",
+    "Domestic Incident", "Property Damage", "Other",
+]
+
+# Configurable authority layer (section 12/23) — informational only for the MVP.
+# A real deployment would populate each authority's actual submission endpoint.
+AUTHORITIES = [
+    {
+        "id": "demo-local-police",
+        "name": "Demo Local Police Department (non-emergency)",
+        "handles": ["Theft", "Robbery", "Burglary", "Assault", "Vandalism",
+                    "Domestic Incident", "Property Damage", "Other"],
+        "integration": "demo",  # "demo" = no real agency is connected
+        "contact": "Configure a real non-emergency line in production.",
+    },
+    {
+        "id": "demo-cybercrime-unit",
+        "name": "Demo Cybercrime Reporting Unit",
+        "handles": ["Cybercrime", "Fraud", "Harassment", "Threat"],
+        "integration": "demo",
+        "contact": "Configure a real cybercrime portal in production.",
+    },
+    {
+        "id": "demo-missing-persons",
+        "name": "Demo Missing Persons Unit",
+        "handles": ["Missing Person"],
+        "integration": "demo",
+        "contact": "Configure the real missing-persons unit in production.",
+    },
+]
+
+# Configurable emergency numbers (demo-labeled; NOT a real dispatch integration)
+EMERGENCY_NUMBER = os.getenv("EMERGENCY_NUMBER", "911")
+
+DISCLAIMER = (
+    "Crime Report.AI provides AI-assisted reporting support. AI-generated "
+    "information may contain errors and should be reviewed by the user before "
+    "submission. The application does not replace emergency services, law "
+    "enforcement, legal professionals, or official reporting procedures."
+)
+
+
+def gemini_configured() -> bool:
+    return bool(GEMINI_API_KEY)
+
+
+def pinecone_configured() -> bool:
+    return bool(PINECONE_API_KEY)
