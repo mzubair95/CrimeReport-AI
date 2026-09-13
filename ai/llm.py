@@ -10,6 +10,8 @@ from ai.errors import LLMUnavailable
 
 if settings.LLM_PROVIDER == "grok":
     from ai import grok as _backend
+elif settings.LLM_PROVIDER == "groq":
+    from ai import groq as _backend
 else:
     from ai import gemini as _backend
 

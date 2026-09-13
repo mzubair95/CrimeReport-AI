@@ -81,7 +81,7 @@ tracking ID returned.
 |---|---|
 | Frontend/UI | Streamlit (responsive, mobile-friendly) |
 | Backend | Python 3.12 |
-| LLM / multimodal AI | Google Gemini (`google-genai` SDK) **or** xAI Grok (OpenAI-compatible endpoint) — set via `LLM_PROVIDER` |
+| LLM / multimodal AI | Google Gemini (`google-genai` SDK), xAI Grok, or Groq (both OpenAI-compatible) — set via `LLM_PROVIDER` |
 | Vector database | Pinecone (`pinecone` SDK v5+) |
 | Embeddings | sentence-transformers (`all-MiniLM-L6-v2`), swappable for Gemini embeddings |
 | Speech-to-text | faster-whisper (local, free, offline — independent of `LLM_PROVIDER`) |
@@ -98,8 +98,9 @@ backend based on `LLM_PROVIDER` in `.env`:
 
 - `LLM_PROVIDER=gemini` (default) → [ai/gemini.py](ai/gemini.py), using the `google-genai` SDK.
 - `LLM_PROVIDER=grok` → [ai/grok.py](ai/grok.py), using xAI's OpenAI-compatible `/v1/chat/completions` endpoint.
+- `LLM_PROVIDER=groq` → [ai/groq.py](ai/groq.py), using Groq's OpenAI-compatible endpoint (fast inference of open models like `openai/gpt-oss-120b` and `qwen/qwen3.8-27b`). Note: **Groq is a different company from Grok/xAI** despite the near-identical name — double-check which one you mean before grabbing a key.
 
-Grok's chat endpoint accepts text and images but not raw audio/video the way
+None of these three providers' chat endpoints accept raw audio/video the way
 Gemini does — video already falls back to frame extraction either way
 (`input/video.py`), and voice transcription always runs locally via
 faster-whisper (`input/voice.py`), so switching providers doesn't break
@@ -136,9 +137,10 @@ cp .env.example .env
 ```
 
 ```text
-LLM_PROVIDER=gemini                 # or "grok"
+LLM_PROVIDER=gemini                 # or "grok" (xAI) or "groq" (Groq)
 GEMINI_API_KEY=your-gemini-key      # https://aistudio.google.com/apikey
 # GROK_API_KEY=your-grok-key        # https://console.x.ai (only if LLM_PROVIDER=grok)
+# GROQ_API_KEY=your-groq-key        # https://console.groq.com (only if LLM_PROVIDER=groq)
 PINECONE_API_KEY=your-pinecone-key  # https://app.pinecone.io
 PINECONE_INDEX=crime-report-ai
 ```

@@ -12,7 +12,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ---- Secrets / API config (never hard-code these) ----
 # Which LLM backend powers classification/questions/summaries/vision (section 36:
-# the LLM must be swappable without rewriting the app). "gemini" (default) or "grok".
+# the LLM must be swappable without rewriting the app). "gemini" (default),
+# "grok" (xAI), or "groq" (Groq's fast-inference open-model hosting — note this
+# is a different company from Grok/xAI despite the near-identical name).
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -23,6 +25,11 @@ GROK_API_KEY = os.getenv("GROK_API_KEY", "")
 GROK_BASE_URL = os.getenv("GROK_BASE_URL", "https://api.x.ai/v1")
 GROK_TEXT_MODEL = os.getenv("GROK_TEXT_MODEL", "grok-4.6")
 GROK_VISION_MODEL = os.getenv("GROK_VISION_MODEL", "grok-4.6")
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+GROQ_TEXT_MODEL = os.getenv("GROQ_TEXT_MODEL", "openai/gpt-oss-120b")
+GROQ_VISION_MODEL = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.8-27b")
 
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "")
 PINECONE_INDEX = os.getenv("PINECONE_INDEX", "crime-report-ai")
@@ -101,8 +108,16 @@ def grok_configured() -> bool:
     return bool(GROK_API_KEY)
 
 
+def groq_configured() -> bool:
+    return bool(GROQ_API_KEY)
+
+
 def llm_configured() -> bool:
-    return grok_configured() if LLM_PROVIDER == "grok" else gemini_configured()
+    if LLM_PROVIDER == "grok":
+        return grok_configured()
+    if LLM_PROVIDER == "groq":
+        return groq_configured()
+    return gemini_configured()
 
 
 def pinecone_configured() -> bool:
