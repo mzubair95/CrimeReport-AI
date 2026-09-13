@@ -71,11 +71,17 @@ _FALSE_REPORTING_FALLBACK = {
                "(including police), intending or knowing it is likely to cause that "
                "public servant to act (or omit to act) improperly, or to injure/annoy "
                "someone.",
-    "cognizable": "unknown — verify against CrPC Schedule II",
-    "bailable": "bailable (draft)",
-    "punishment_range": "Reported and amended over time — verify the current figure "
-                         "directly against the primary source before relying on it.",
-    "source_citation": "http://www.pljlawsite.com/html/ppc182.htm",
+    "cognizable": "not independently confirmed against CrPC Schedule II primary text",
+    "bailable": "commonly cited as bailable (secondary sources) — not independently "
+                "confirmed against CrPC Schedule II primary text",
+    "punishment_range": "Base: imprisonment of either description for a term which may "
+                         "extend to 6 months, or fine. If the falsely-alleged offence is "
+                         "punishable by death: up to 7 years. If punishable by life "
+                         "imprisonment: up to 5 years. For other offences: up to "
+                         "one-fourth of the longest term prescribed for that offence. "
+                         "(Base term and escalation structure verified against primary "
+                         "source text.)",
+    "source_citation": "http://www.pljlawsite.com/html/ppc182.htm (verified 2026-09-13)",
 }
 
 

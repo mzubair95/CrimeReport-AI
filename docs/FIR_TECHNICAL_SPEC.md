@@ -1,20 +1,34 @@
 # Technical Spec — Pakistan FIR-Assist Flow
 
-Status: **draft for review** — extends Crime Report.AI into the Step 0–9 FIR
-(First Information Report) drafting flow. Architecture decisions locked in:
-stay single-process Streamlit (no separate REST API yet, but every step is
-written as a standalone "service" function so a future FastAPI layer is a
-thin wrapper, not a rewrite); legal citations come from a **curated RAG
-knowledge base**, never from an LLM's parametric memory.
+Status: **implemented** — all 6 phases in §5 are built and verified live
+end-to-end against the real Groq + Pinecone backend. Architecture decisions:
+single-process Streamlit (no separate REST API, but every step is a
+standalone "service"/module function so a future FastAPI layer is a thin
+wrapper, not a rewrite); legal citations come from a **curated RAG
+knowledge base**, never from an LLM's parametric memory, and as of
+2026-09-13 that knowledge base has been through an AI-assisted verification
+pass against primary-source statute text (see §3.2's note on what remains
+unconfirmed).
 
-> ⚠️ **Legal accuracy disclaimer for this document itself**: the section
-> numbers, punishment ranges, and cognizable/bailable statuses below were
-> drafted from web research (see Source column) and are **not verified by a
-> lawyer**. Treat every row in §3.2 as a first draft. Before this ships to a
-> real user, a qualified lawyer must check each entry against the primary
-> source PDFs cited, and against Schedule II of the Code of Criminal
-> Procedure, 1898 (which — not the PPC itself — is what actually classifies
-> offenses as cognizable/bailable).
+> ⚠️ **Legal accuracy disclaimer for this document itself**: §3.2 has been
+> through an **AI-assisted verification pass** (2026-09-13) — every section
+> number, punishment figure, and PECA/Sindh-DV-Act cognizable/bailable
+> classification below was checked against the actual primary-source
+> statute PDF text (not a secondary summary), and corrections were made
+> where the original draft was wrong (see §3.2 notes). This materially
+> improves confidence over the first draft, but it is still **not a
+> substitute for a qualified lawyer**: (a) it was done by an AI assistant,
+> not a licensed advocate; (b) the cognizable/bailable status of the *plain
+> PPC* sections (theft, robbery, kidnapping, assault, harassment, false
+> reporting) could not be independently confirmed — that classification
+> comes from Schedule II of the Code of Criminal Procedure, 1898, and the
+> two Schedule II source documents fetched during this pass did not yield
+> extractable table text; those fields are marked "commonly cited... not
+> independently confirmed" rather than asserted as fact; (c) the PPC 337/338
+> "hurt" grading (relevant to Assault) genuinely requires a medico-legal
+> assessment per case, not a lookup. Before this ships to a real user, a
+> qualified lawyer should still review §3.2, with priority on confirming
+> Schedule II status for the PPC entries.
 
 ---
 
@@ -155,26 +169,39 @@ Every read of a `Domestic Violence` or `Harassment` category report should
 write an `audit_log` row (§4.4) — these categories carry real personal-safety
 risk if the record leaks or is browsed casually.
 
-### 3.2 Legal reference draft mapping (seed data for the legal KB — UNVERIFIED)
+### 3.2 Legal reference mapping — AI-assisted verification pass (2026-09-13)
 
-| Category | Statute | Section(s) | Cognizable/Bailable (draft) | Source |
-|---|---|---|---|---|
-| Robbery/Theft | PPC | 379 (theft), 390/392 (robbery) | Theft: bailable · Robbery: non-bailable (draft) | [PPC full text (UNODC)](https://www.unodc.org/cld/uploads/res/document/pak/1860/pakistan_penal_code_1860_html/Pakistan_Penal_Code_1860_incorporating_amendments_to_16_February_2017.pdf) |
-| Vehicle Theft | PPC | 379/380 (theft, incl. from a vehicle) | Draft: bailable for simple theft | same as above |
-| Kidnapping | PPC | 359–365 (kidnapping/abduction, aggravating circumstances) | Draft: non-bailable for aggravated forms | [UNODC Sherloc §359-365A](https://sherloc.unodc.org/cld/en/legislation/pak/pakistan_penal_code_1860/chapter_xvi-a/sections_359365a_367_368/sections_359365a_367_368.html) |
-| Assault | PPC | 351 (assault), 337/338 (hurt, graded) | Varies by hurt category — needs Schedule II lookup | PPC full text |
-| Cybercrime/Online Fraud | PECA 2016 | 13/14 (electronic forgery/fraud), 20/21 (dignity/modesty), 24 (cyber stalking) | §21 is cognizable & non-bailable; most others non-cognizable & bailable (draft) | [PECA 2016 full text](https://sja.gos.pk/assets/Acts_Ordinances_Rules2/PEC2016.pdf) |
-| Harassment | PPC | 509 (insulting modesty), 504/506 (intimidation) | Draft: bailable | [PPC §506 (UNODC)](https://www.unodc.org/cld/en/legislation/pak/pakistan_penal_code_1860/chapter_xxii/section_506/section_506.html) |
-| Domestic Violence | Sindh Domestic Violence (Prevention & Protection) Act, 2013 | Protection order + breach provisions | Breach of protection order: cognizable, bailable, compoundable (draft) | [Sindh Act XX of 2013 (official)](https://sindhlaws.gov.pk/setup/publications_SindhCode/PUB-NEW-18-000141.pdf) |
-| False reporting notice (Step 6, all categories) | PPC | 182 (false information to a public servant) | — | [PPC §182 text](http://www.pljlawsite.com/html/ppc182.htm) |
+| Category | Statute | Section(s) | Punishment (verified against primary text) | Cognizable/Bailable | Source |
+|---|---|---|---|---|---|
+| Robbery/Theft | PPC | 379 (theft), 380 (theft in dwelling), 390 (robbery def.), 392 (robbery punishment) | 379: up to 3yr/fine/both · 380: up to 7yr+fine · 392: rigorous 3–10yr+fine (up to 14yr on highway) | Not independently confirmed against Schedule II (commonly cited: theft bailable, robbery non-bailable) | [PPC full text](https://sherloc.unodc.org/cld/uploads/res/document/pak/1860/pakistan_penal_code_1860_html/Pakistan_Penal_Code_1860_incorporating_amendments_to_16_February_2017.pdf), [§379](http://www.pljlawsite.com/html/ppc379.htm), [§380](http://www.pljlawsite.com/html/ppc380.htm), [§390](http://www.pljlawsite.com/html/ppc390.htm), [§392](http://www.pljlawsite.com/html/ppc392.htm) |
+| Vehicle Theft | PPC | 379 / 380 (same as above, no standalone vehicle-theft offense in the PPC) | Same as above | Same as above | Same as above |
+| Kidnapping | PPC | 359 (def.), 363 (base punishment), 364 (to murder), 365 (to confine), 365-A (for ransom/extortion) | 363: up to 7yr+fine · 364: life or up to 10yr+fine · 365: up to 7yr+fine · 365-A: death or life imprisonment | Not independently confirmed against Schedule II | [§359](http://www.pljlawsite.com/html/ppc359.htm), [§363](http://www.pljlawsite.com/html/ppc363.htm), [§364](http://www.pljlawsite.com/html/ppc364.htm), [§365](http://www.pljlawsite.com/html/ppc365.htm), [§365-A](http://www.pljlawsite.com/html/ppc365a.htm) |
+| Assault | PPC | 351 (def.), 352 (base punishment) | 352: up to 3mo or fine up to PKR 1,500, or both | Not independently confirmed against Schedule II | [§351](http://www.pljlawsite.com/html/ppc351.htm), [§352](http://www.pljlawsite.com/html/ppc352.htm) |
+| Assault (hurt) | PPC | 337 (Shajjah — head/face injury grading only) | **Not resolved** — the hurt framework spans many further lettered sub-sections not individually verified; exact classification needs a doctor + lawyer, not a lookup. **Correction**: §338 is *not* a hurt provision — it defines Isqat-i-Haml (miscarriage), unrelated to assault. An earlier draft of this table incorrectly grouped 337/338 together. | Varies by sub-clause, not verified | [§337](http://www.pljlawsite.com/html/ppc337.htm), [§338](http://www.pljlawsite.com/html/ppc338.htm) |
+| Cybercrime/Online Fraud | PECA 2016 | 13 (electronic forgery), 14 (electronic fraud), 24 (cyber stalking) | 13: up to 3yr/PKR 250k/both (up to 7yr/PKR 5M for critical infrastructure) · 14: up to 2yr/PKR 10M/both · 24: up to 3yr/PKR 1M/both (up to 5yr/PKR 10M if victim is a minor) | **Verified**: non-cognizable, bailable, compoundable (PECA §43(1) — the Act's default for everything except §§10/21/22) | [PECA 2016 full text](https://sja.gos.pk/assets/Acts_Ordinances_Rules2/PEC2016.pdf) §§13, 14, 24, 43 |
+| Harassment | PECA 2016 | 20 (dignity), 21 (modesty/minor) | 20: up to 3yr/PKR 1M/both · 21 base: up to 5yr/PKR 5M/both; if minor: up to 7yr/PKR 5M (10yr flat if repeat offence against a minor) | **Verified**: §20 non-cognizable/bailable; §21 is one of only 3 PECA sections (10/21/22) that is **cognizable and non-bailable** (PECA §43(2)) | Same PECA source, §§20, 21, 43 |
+| Harassment | PPC | 509 (insulting modesty), 504 (intentional insult), 506 (criminal intimidation) | 509: up to 3yr or fine up to PKR 500,000, or both · 504: up to 2yr/fine/both · 506 base: up to 2yr/fine/both, aggravated (death/grievous hurt/fire/imputing unchastity threats): up to 7yr/fine/both | Not independently confirmed against Schedule II | [§509 text](https://pakarbiter.com/laws-in-pakistan/pakistan-penal-code-1860/ppc-section-509/insulting-modesty-or-causing-sexual-harrassment), [§504](http://www.pljlawsite.com/html/ppc504.htm), [§506](http://www.pljlawsite.com/html/ppc506.htm) |
+| Domestic Violence | Sindh Domestic Violence (Prevention & Protection) Act, 2013 | §15 (breach of protection order), §6 (punishment for underlying §5 offenses) | §15: up to 1yr or fine up to PKR 20,000, or both · §6: sub-clause-specific (5(f): min 6mo/PKR 10k+; 5(k) stalking: min 1yr/PKR 20k+; 5(l): min 2yr/PKR 50k+; 5(m): min 1mo) | **Verified**: §15(2) explicitly states the breach offense "shall be cognizable, bailable and compoundable" — an explicit statutory override of the default CrPC classification | [Sindh Act XX of 2013 (official)](https://sindhlaws.gov.pk/setup/publications_SindhCode/PUB-NEW-18-000141.pdf) §§6, 15 |
+| False reporting notice (Step 6, all categories) | PPC | 182 (false information to a public servant) | Base: up to 6mo or fine. Escalates with the severity of the falsely-alleged offense: up to 7yr if that offense carries death, up to 5yr if life imprisonment, else up to 1/4 of its longest term. | Not independently confirmed against Schedule II (commonly cited as bailable) | [PPC §182 text](http://www.pljlawsite.com/html/ppc182.htm) |
 
-This table is the seed content for `knowledge_base/legal/*.txt` — written up
-as short, cited paragraphs (same chunk-and-embed pipeline as the existing
-`knowledge_base/crimes/*.txt`), ingested into a **separate Pinecone
+**What "verified" means here**: for PECA 2016 and the Sindh Domestic Violence
+Act, the cognizable/bailable classification is stated *in the statute
+itself* (PECA §43, Sindh Act §15(2)), so fetching and reading the primary
+PDF text directly confirms it. For the plain PPC sections, cognizable/
+bailable status comes from a *separate* document (CrPC Schedule II) that
+this pass could not get clean extractable text from (two different PDF
+sources were tried) — those cells say "not independently confirmed" rather
+than stating a number with false confidence. Punishment figures for PPC
+sections were confirmed against primary section text directly and are
+higher-confidence than the cognizable/bailable classification.
+
+This table is the seed content for
+`knowledge_base/legal/legal_references.json` — one structured JSON record
+per section (not chunked prose), ingested into a **separate Pinecone
 namespace** (`legal`) so a Step 4 lookup never accidentally mixes in general
-reporting-guidance text. `rag/ingest.py` already supports per-category
-metadata filtering — this only needs a `namespace="legal"` parameter added
-to `upsert_vectors`/`query`.
+reporting-guidance text, and always filtered by exact category (never
+similarity-only), so a lookup can never surface a different category's
+statute.
 
 ---
 
@@ -263,36 +290,58 @@ and passes any still-missing required fields into the existing
 
 ## 5. Implementation phases (suggested order)
 
-1. **Category restructure**: replace `CRIME_CATEGORIES` with the Step 1
-   list, add `CATEGORY_REQUIRED_FIELDS`, add `ui/category_select.py`,
-   rewire `ui/report.py` to take the category as a given rather than
-   inferring it from scratch.
-2. **Legal RAG subsystem**: `knowledge_base/legal/*.txt` (seeded from §3.2,
-   clearly marked draft), `legal` Pinecone namespace, `legal_service.py`,
-   `ui/legal_lookup.py`. Ships with a visible "⚠️ unverified — pending legal
-   review" badge until you confirm the content has been checked.
-3. **Step 0 emergency gate + Step 6 false-reporting notice**: both are
-   mostly copy + a confirmation checkbox, low engineering risk.
-4. **Reporter info + CNIC encryption**: `security/encryption.py`,
-   `reporter_service.py`, schema migration for `reporter_cnic_enc`.
-5. **FIR PDF template**: `reports/fir_template.py`, referencing
+1. ✅ **Category restructure**: `CRIME_CATEGORIES` replaced with the Step 1
+   list, `CATEGORY_REQUIRED_FIELDS` added, `ui/category_select.py` built,
+   `ui/report.py` takes the category as a given.
+2. ✅ **Legal RAG subsystem**: `knowledge_base/legal/legal_references.json`
+   (seeded from §3.2 — as of 2026-09-13, AI-assisted-verified against
+   primary-source statute text; Schedule II cognizable/bailable status for
+   plain PPC sections still not independently confirmed), `legal` Pinecone
+   namespace, `legal_service.py`, `ui/legal_lookup.py`. The in-app
+   disclaimer (`ai/legal_service.DISCLAIMER`) still tells users this is not
+   legal advice and has not been reviewed by a lawyer, regardless of the
+   verification pass.
+3. ✅ **Step 0 emergency gate + Step 6 false-reporting notice**:
+   `ui/emergency_check.py` and `ui/false_reporting_notice.py` built, the
+   PPC 182 notice pulled via exact metadata match with a hard-coded
+   fallback so it can never fail to render.
+4. ✅ **Reporter info + CNIC encryption**: `security/encryption.py`
+   (Fernet), CNIC field added to `ui/evidence.py`'s reporter form,
+   `reporter_cnic_enc` column, `decrypt_cnic()` with mandatory audit
+   logging.
+5. ✅ **FIR PDF template**: `reports/fir_template.py`, referencing
    `legal_references` rows, with the "bring this to the station" disclaimer
-   printed on every page.
-6. **Audit log + sensitive-category access wrapper.**
+   printed on every page; `fir_documents` table tracks generated versions.
+6. ✅ **Audit log + sensitive-category access wrapper**: `audit_log` table,
+   `get_report_audited()`, wired into `ui/status.py`.
 
-Each phase is independently shippable and testable against the existing
-offline test suite pattern (`tests/`).
+All 6 phases were verified live end-to-end (not just unit-tested) and are
+covered by the offline test suite (`tests/`).
 
 ---
 
 ## 6. Open questions for you
 
-1. Do you have (or can you get) a lawyer to review §3.2 before this goes in
-   front of real users, even in demo form? I'd rather the app under-claim
-   ("see a lawyer") than state a wrong section/punishment with confidence.
+1. ~~Do you have (or can you get) a lawyer to review §3.2?~~ **Partially
+   addressed 2026-09-13**: an AI-assisted pass verified every punishment
+   figure and the PECA/Sindh-DV-Act cognizable/bailable status against
+   primary source text (not secondary summaries), and corrected a real
+   error (337/338 were wrongly grouped as one "hurt" provision — 338 is
+   actually an unrelated miscarriage offense). What's still open: the
+   cognizable/bailable status of the *plain PPC* sections couldn't be
+   confirmed against CrPC Schedule II (two source PDFs didn't yield
+   extractable table text), and the PPC 337-series hurt grading needs a
+   case-by-case medico-legal read that no lookup can replace. **A qualified
+   lawyer should still review §3.2** before this goes in front of real
+   users — the bar has moved from "unverified web research" to "AI-verified
+   against primary text, still not lawyer-reviewed," which is better but
+   not the same thing.
 2. Should Step 1's category list fully replace the current
    `CRIME_CATEGORIES`, or should the AI classifier still map free text onto
-   this same list as a fallback for the "Other" category?
+   this same list as a fallback for the "Other" category? **Resolved**:
+   the Step 1 list replaced `CRIME_CATEGORIES` outright; the AI classifier
+   now runs as a confirmation/override signal against the user's pick
+   rather than a parallel list.
 3. For Step 9 "share" — download/PDF is in scope now; is email sharing
    something you want in this phase, or later (it needs an SMTP/provider
-   decision I haven't made)?
+   decision I haven't made)? **Still open** — not built.
