@@ -108,6 +108,18 @@ def to_pdf(report: dict, report_id: str) -> bytes:
     else:
         story.append(Paragraph("No evidence files attached.", styles["Body"]))
 
+    legal_refs = report.get("legal_references") or []
+    if legal_refs:
+        story.append(Paragraph("Applicable Legal References (Unverified — See Disclaimer)",
+                                styles["SectionHeading"]))
+        for ref in legal_refs:
+            story.append(Paragraph(
+                f"<b>{ref.get('statute', '')} § {ref.get('section_number', '')}</b> — "
+                f"{ref.get('section_title', '')}. Cognizable: {ref.get('cognizable', 'unknown')}. "
+                f"Bailable: {ref.get('bailable', 'unknown')}. "
+                f"Punishment: {ref.get('punishment_range', 'unknown')}.",
+                styles["Small"]))
+
     victim = report.get("victim") or {}
     if victim:
         story.append(Paragraph("Reporter Information", styles["SectionHeading"]))

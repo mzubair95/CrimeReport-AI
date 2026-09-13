@@ -1,0 +1,178 @@
+[
+  {
+    "category": "Robbery/Theft",
+    "statute": "PPC",
+    "section_number": "379",
+    "section_title": "Punishment for theft",
+    "summary": "Simple theft (dishonestly taking movable property out of someone's possession without consent, without force). Draft punishment: imprisonment up to 3 years, or fine, or both.",
+    "cognizable": "unknown — verify against CrPC Schedule II",
+    "bailable": "bailable (draft — commonly cited as bailable)",
+    "punishment_range": "Imprisonment up to 3 years, or fine, or both (draft)",
+    "source_citation": "https://www.unodc.org/cld/uploads/res/document/pak/1860/pakistan_penal_code_1860_html/Pakistan_Penal_Code_1860_incorporating_amendments_to_16_February_2017.pdf"
+  },
+  {
+    "category": "Robbery/Theft",
+    "statute": "PPC",
+    "section_number": "390 / 392",
+    "section_title": "Robbery — definition and punishment",
+    "summary": "Robbery is theft or extortion committed with violence, or the threat of violence, causing fear. It is an aggravated form of theft/extortion. Draft punishment is significantly higher than simple theft.",
+    "cognizable": "cognizable (draft — commonly cited as cognizable given the violence element)",
+    "bailable": "non-bailable (draft)",
+    "punishment_range": "Reported as roughly 7–10 years imprisonment in secondary sources (draft — verify exact range in the primary text)",
+    "source_citation": "https://www.unodc.org/cld/uploads/res/document/pak/1860/pakistan_penal_code_1860_html/Pakistan_Penal_Code_1860_incorporating_amendments_to_16_February_2017.pdf"
+  },
+  {
+    "category": "Vehicle Theft",
+    "statute": "PPC",
+    "section_number": "379 / 380",
+    "section_title": "Theft, including theft in/from a building or vehicle",
+    "summary": "Vehicle theft is typically prosecuted under the general theft provisions (s.379), with s.380 addressing theft in a building used as a human dwelling or for property custody — relevant if the vehicle was stolen from a garage/compound. No separate standalone 'vehicle theft' offense exists in the PPC itself; check for provincial motor-vehicle ordinances too.",
+    "cognizable": "unknown — verify against CrPC Schedule II",
+    "bailable": "bailable for simple theft (draft)",
+    "punishment_range": "Up to 3 years for s.379; s.380 draws a higher term (draft — verify exact figure)",
+    "source_citation": "https://www.unodc.org/cld/uploads/res/document/pak/1860/pakistan_penal_code_1860_html/Pakistan_Penal_Code_1860_incorporating_amendments_to_16_February_2017.pdf"
+  },
+  {
+    "category": "Kidnapping",
+    "statute": "PPC",
+    "section_number": "364",
+    "section_title": "Kidnapping or abducting in order to murder",
+    "summary": "Kidnapping/abducting a person so that they may be murdered, or put in danger of being murdered.",
+    "cognizable": "cognizable (draft)",
+    "bailable": "non-bailable (draft)",
+    "punishment_range": "Imprisonment for life, or rigorous imprisonment up to 10 years, plus fine",
+    "source_citation": "https://sherloc.unodc.org/cld/en/legislation/pak/pakistan_penal_code_1860/chapter_xvi-a/sections_359365a_367_368/sections_359365a_367_368.html"
+  },
+  {
+    "category": "Kidnapping",
+    "statute": "PPC",
+    "section_number": "365",
+    "section_title": "Kidnapping/abducting with intent to secretly and wrongfully confine a person",
+    "summary": "Kidnapping/abducting a person with intent to cause them to be secretly and wrongfully confined.",
+    "cognizable": "cognizable (draft)",
+    "bailable": "non-bailable (draft)",
+    "punishment_range": "Imprisonment up to 7 years, plus fine",
+    "source_citation": "https://sherloc.unodc.org/cld/en/legislation/pak/pakistan_penal_code_1860/chapter_xvi-a/sections_359365a_367_368/sections_359365a_367_368.html"
+  },
+  {
+    "category": "Kidnapping",
+    "statute": "PPC",
+    "section_number": "359–363 (Chapter XVI-A)",
+    "section_title": "Kidnapping/abduction — base definitions and general punishment",
+    "summary": "Sections 359–361 define kidnapping (from Pakistan / from lawful guardianship); mere abduction (s.362) is not itself an offense unless it falls under one of the aggravating sections (364, 365, 366, 367, 369). The exact section that applies depends heavily on case facts (age of victim, intent, relationship) — this needs a lawyer's read of the specific circumstances, not an automated match.",
+    "cognizable": "varies by section — verify against CrPC Schedule II",
+    "bailable": "varies by section",
+    "punishment_range": "Varies by section — see primary source",
+    "source_citation": "https://sherloc.unodc.org/cld/en/legislation/pak/pakistan_penal_code_1860/chapter_xvi-a/sections_359365a_367_368/sections_359365a_367_368.html"
+  },
+  {
+    "category": "Assault",
+    "statute": "PPC",
+    "section_number": "337 / 338 (and sub-clauses)",
+    "section_title": "Hurt — graded categories (Qisas and Diyat provisions)",
+    "summary": "PPC 337–338 grade physical injury ('hurt') into many sub-categories with different punishments depending on severity and duration of harm. This is one of the more complex parts of the PPC — the exact sub-clause depends on the medical nature of the injury, which needs a doctor's/lawyer's assessment, not an automated guess.",
+    "cognizable": "varies by sub-clause — verify against CrPC Schedule II",
+    "bailable": "varies — some grades are non-bailable where Qisas cannot be enforced (draft)",
+    "punishment_range": "Reported range: roughly up to 2 years for lesser hurt, up to 7 years for hurt endangering life or causing prolonged severe pain (draft — verify exact sub-clause)",
+    "source_citation": "https://www.unodc.org/cld/uploads/res/document/pak/1860/pakistan_penal_code_1860_html/Pakistan_Penal_Code_1860_incorporating_amendments_to_16_February_2017.pdf"
+  },
+  {
+    "category": "Assault",
+    "statute": "PPC",
+    "section_number": "351 / 352",
+    "section_title": "Assault — definition and punishment",
+    "summary": "Section 351 defines assault (a gesture or preparation causing apprehension of criminal force, without necessarily any physical contact); s.352 covers punishment for assault or use of criminal force otherwise than on grave provocation.",
+    "cognizable": "unknown — verify against CrPC Schedule II",
+    "bailable": "bailable (commonly cited as a minor offense — draft, verify)",
+    "punishment_range": "Reported as a relatively minor imprisonment/fine term — verify exact figure in the primary text",
+    "source_citation": "https://www.unodc.org/cld/uploads/res/document/pak/1860/pakistan_penal_code_1860_html/Pakistan_Penal_Code_1860_incorporating_amendments_to_16_February_2017.pdf"
+  },
+  {
+    "category": "Cybercrime/Online Fraud",
+    "statute": "PECA 2016",
+    "section_number": "13 / 14",
+    "section_title": "Electronic forgery / electronic fraud",
+    "summary": "Covers interference with data/electronic systems for the purpose of forgery, and dishonestly/fraudulently causing loss through electronic means (e.g. online financial scams).",
+    "cognizable": "non-cognizable (draft — per PECA's general rule that most offenses are non-cognizable except ss.10, 21, 22)",
+    "bailable": "bailable (draft)",
+    "punishment_range": "Varies — see primary source for exact terms and fines",
+    "source_citation": "https://sja.gos.pk/assets/Acts_Ordinances_Rules2/PEC2016.pdf"
+  },
+  {
+    "category": "Cybercrime/Online Fraud",
+    "statute": "PECA 2016",
+    "section_number": "24",
+    "section_title": "Cyber stalking",
+    "summary": "Covers repeated, unwanted electronic contact/communication that causes fear or distress — commonly used for online harassment cases with a stalking pattern.",
+    "cognizable": "non-cognizable (draft)",
+    "bailable": "bailable (draft)",
+    "punishment_range": "See primary source for exact terms",
+    "source_citation": "https://sja.gos.pk/assets/Acts_Ordinances_Rules2/PEC2016.pdf"
+  },
+  {
+    "category": "Harassment",
+    "statute": "PECA 2016",
+    "section_number": "20 / 21",
+    "section_title": "Offences against dignity / modesty of a natural person",
+    "summary": "Covers electronic communication that harms a person's reputation, privacy, or 'modesty' — e.g. sharing private images/information without consent. Reported as one of the few PECA offenses that is cognizable and non-bailable (s.21) rather than the Act's general non-cognizable/bailable default.",
+    "cognizable": "s.21: cognizable (draft); s.20: non-cognizable (draft)",
+    "bailable": "s.21: non-bailable (draft); s.20: bailable (draft)",
+    "punishment_range": "s.21 reported as up to 7 years imprisonment and/or a fine up to PKR 5 million (draft — verify)",
+    "source_citation": "https://sja.gos.pk/assets/Acts_Ordinances_Rules2/PEC2016.pdf"
+  },
+  {
+    "category": "Harassment",
+    "statute": "PPC",
+    "section_number": "509",
+    "section_title": "Insulting the modesty of / causing sexual harassment to a woman",
+    "summary": "Covers words, gestures, or acts intended to insult a woman's modesty or intrude on her privacy, including workplace/public harassment.",
+    "cognizable": "unknown — verify against CrPC Schedule II",
+    "bailable": "bailable (draft)",
+    "punishment_range": "Reported as up to 3 years imprisonment, or fine, or both (draft — verify exact figure)",
+    "source_citation": "https://pljlawsite.com/html/ppc506.htm"
+  },
+  {
+    "category": "Harassment",
+    "statute": "PPC",
+    "section_number": "504 / 506",
+    "section_title": "Intentional insult to provoke breach of peace / criminal intimidation",
+    "summary": "s.504 covers intentional insult intended to provoke a breach of the peace; s.506 covers threatening a person with injury to person, reputation, or property to cause alarm or compel an act. Punishment increases if the threat is to cause death, grievous hurt, or to impute unchastity to a woman.",
+    "cognizable": "unknown — verify against CrPC Schedule II",
+    "bailable": "bailable for the base offense (draft)",
+    "punishment_range": "Base: up to 2 years or fine or both; aggravated threats (death/grievous hurt/property destruction by fire/imputing unchastity): up to 7 years, fine, or both",
+    "source_citation": "https://www.unodc.org/cld/en/legislation/pak/pakistan_penal_code_1860/chapter_xxii/section_506/section_506.html"
+  },
+  {
+    "category": "Domestic Violence",
+    "statute": "Sindh Domestic Violence (Prevention & Protection) Act, 2013",
+    "section_number": "N/A — see protection order provisions",
+    "section_title": "Protection orders and breach thereof",
+    "summary": "The Act allows a court to issue a protection order or interim protection order against a respondent in a domestic relationship. Breaching such an order is itself a separate offense under the Act.",
+    "cognizable": "cognizable (draft — reported for breach of a protection order)",
+    "bailable": "bailable (draft)",
+    "punishment_range": "Breach of protection/interim protection order: imprisonment up to 1 year, or fine up to PKR 20,000, or both (draft). Some specific violations (s.5(f)) reported with a minimum 6-month term. Fines generally reported in the PKR 1,000–50,000 range across the Act.",
+    "source_citation": "https://sindhlaws.gov.pk/setup/publications_SindhCode/PUB-NEW-18-000141.pdf"
+  },
+  {
+    "category": "Domestic Violence",
+    "statute": "PPC",
+    "section_number": "337 / 338 / 351 / 506 (as applicable)",
+    "section_title": "Underlying PPC offenses that may also apply",
+    "summary": "Depending on the facts, a domestic violence incident may also constitute hurt (337/338), assault (351), or criminal intimidation (506) under the PPC, in addition to (not instead of) the Sindh Domestic Violence Act. Which sections apply depends on the specific acts alleged.",
+    "cognizable": "varies — verify against CrPC Schedule II",
+    "bailable": "varies",
+    "punishment_range": "See the corresponding PPC entries in this knowledge base",
+    "source_citation": "https://www.unodc.org/cld/uploads/res/document/pak/1860/pakistan_penal_code_1860_html/Pakistan_Penal_Code_1860_incorporating_amendments_to_16_February_2017.pdf"
+  },
+  {
+    "category": "Other",
+    "statute": "PPC",
+    "section_number": "182",
+    "section_title": "False information with intent to cause a public servant to use his lawful power to the injury of another person",
+    "summary": "Applies to knowingly giving false information to a public servant (including police), intending or knowing it is likely to cause that public servant to act (or omit to act) improperly, or to injure/annoy someone. This is the provision referenced in the false-reporting notice shown before a report is confirmed (Step 6) — it applies to false reports of ANY category, not just 'Other'.",
+    "cognizable": "unknown — verify against CrPC Schedule II",
+    "bailable": "bailable (draft)",
+    "punishment_range": "Reported and amended over time; secondary sources described a scale tied to the severity of the offense falsely reported (up to 7 years if the falsely-alleged offense carries death, 5 years if life imprisonment, otherwise roughly one-fourth of the longest term for that offense), plus a fine — this figure should be verified directly against the current amended text before being shown as fact.",
+    "source_citation": "http://www.pljlawsite.com/html/ppc182.htm"
+  }
+]

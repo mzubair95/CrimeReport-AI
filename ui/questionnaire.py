@@ -26,7 +26,15 @@ def render():
         go_to("category_select")
         return
 
-    st.markdown(f"**Category:** {d['category']}")
+    col_cat, col_info = st.columns([4, 1])
+    with col_cat:
+        st.markdown(f"**Category:** {d['category']}")
+    with col_info:
+        if st.button("ℹ️ Info", help="See applicable legal references for this category",
+                     use_container_width=True):
+            st.session_state["legal_return_page"] = "questionnaire"
+            go_to("legal_lookup")
+
     if d["crime_type"] and d["crime_type"] != d["category"]:
         st.caption(f"🤖 AI note: based on your description, this might instead be "
                    f"**{d['crime_type']}** — your selected category is still what's used "

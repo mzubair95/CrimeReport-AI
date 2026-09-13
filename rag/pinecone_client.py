@@ -46,26 +46,34 @@ def get_index():
     return _index
 
 
-def upsert_vectors(vectors: list[dict]) -> bool:
-    """vectors: list of {"id": str, "values": [float], "metadata": {...}}"""
+def upsert_vectors(vectors: list[dict], namespace: str = "") -> bool:
+    """
+    vectors: list of {"id": str, "values": [float], "metadata": {...}}
+    namespace: keeps unrelated collections apart within one index — e.g. the
+    "legal" namespace (statute citations) is never mixed with the default
+    namespace (general reporting guidance), so a legal lookup can never
+    accidentally surface generic advice text instead of a citation.
+    """
     index = get_index()
     if index is None:
         logger.warning("Pinecone unavailable, skipping upsert (%s)", _init_error)
         return False
     try:
-        index.upsert(vectors=vectors)
+        index.upsert(vectors=vectors, namespace=namespace)
         return True
     except Exception as exc:
         logger.exception("Pinecone upsert failed: %s", exc)
         return False
 
 
-def query(vector: list[float], top_k: int = 4, filter: dict | None = None) -> list[dict]:
+def query(vector: list[float], top_k: int = 4, filter: dict | None = None,
+          namespace: str = "") -> list[dict]:
     index = get_index()
     if index is None:
         return []
     try:
-        result = index.query(vector=vector, top_k=top_k, include_metadata=True, filter=filter)
+        result = index.query(vector=vector, top_k=top_k, include_metadata=True,
+                              filter=filter, namespace=namespace)
         return result.get("matches", []) if isinstance(result, dict) else result.matches
     except Exception as exc:
         logger.exception("Pinecone query failed: %s", exc)

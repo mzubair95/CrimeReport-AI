@@ -56,6 +56,17 @@ def render():
     card(f"<b>Evidence</b><br>{len(evidence)} file(s) attached" if evidence
          else "<b>Evidence</b><br>No files attached")
 
+    legal_refs = d.get("legal_references", [])
+    if legal_refs:
+        with st.expander(f"⚖️ Legal references shown ({len(legal_refs)}) — unverified, see disclaimer"):
+            for ref in legal_refs:
+                st.markdown(f"**{ref.get('statute')} § {ref.get('section_number')}** — "
+                            f"{ref.get('section_title')}")
+    else:
+        if st.button("ℹ️ View applicable legal references", use_container_width=True):
+            st.session_state["legal_return_page"] = "review"
+            go_to("legal_lookup")
+
     victim = d.get("victim", {})
     card(f"""
         <b>Personal Information</b><br>

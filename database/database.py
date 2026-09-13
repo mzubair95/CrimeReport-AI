@@ -56,6 +56,24 @@ def init_db() -> None:
                 counter INTEGER NOT NULL
             )
         """)
+        # Legal reference lookups shown to the user for a report (FIR spec §3.1) —
+        # persisted separately so the exact citation shown at the time is
+        # auditable even if the knowledge base changes later.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS legal_references (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                report_id TEXT NOT NULL REFERENCES reports(report_id),
+                statute TEXT NOT NULL,
+                section_number TEXT NOT NULL,
+                section_title TEXT,
+                cognizable TEXT,
+                bailable TEXT,
+                punishment_range TEXT,
+                source_citation TEXT NOT NULL,
+                retrieved_at TEXT NOT NULL,
+                disclaimer_shown INTEGER NOT NULL DEFAULT 1
+            )
+        """)
         # Lightweight migration for demo DBs created before `category` existed.
         existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(reports)")}
         if "category" not in existing_cols:
@@ -101,12 +119,45 @@ def create_report(report: dict) -> str:
     return report_id
 
 
+def save_legal_references(report_id: str, refs: list[dict]) -> None:
+    """Persists the exact legal citations shown to the user for this report
+    (FIR spec §3.1) — a durable, auditable record separate from whatever the
+    knowledge base looks like later."""
+    if not refs:
+        return
+    with _lock, _connect() as conn:
+        for ref in refs:
+            conn.execute("""
+                INSERT INTO legal_references (
+                    report_id, statute, section_number, section_title,
+                    cognizable, bailable, punishment_range, source_citation,
+                    retrieved_at, disclaimer_shown
+                ) VALUES (?,?,?,?,?,?,?,?,?,?)
+            """, (
+                report_id, ref.get("statute", ""), ref.get("section_number", ""),
+                ref.get("section_title"), ref.get("cognizable"), ref.get("bailable"),
+                ref.get("punishment_range"), ref.get("source_citation", ""),
+                ref.get("retrieved_at", datetime.now(timezone.utc).isoformat()),
+                1 if ref.get("disclaimer_shown", True) else 0,
+            ))
+
+
+def get_legal_references(report_id: str) -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM legal_references WHERE report_id = ? ORDER BY id", (report_id,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def get_report(report_id: str) -> dict | None:
     with _connect() as conn:
         row = conn.execute("SELECT * FROM reports WHERE report_id = ?", (report_id,)).fetchone()
     if not row:
         return None
-    return _row_to_dict(row)
+    result = _row_to_dict(row)
+    result["legal_references"] = get_legal_references(report_id)
+    return result
 
 
 def list_reports(limit: int = 50) -> list[dict]:
@@ -164,6 +215,7 @@ def submit_report(report: dict) -> dict:
     report["authority_name"] = authority["name"]
 
     report_id = create_report(report)
+    save_legal_references(report_id, report.get("legal_references") or [])
     return {
         "report_id": report_id,
         "status": "RECEIVED",

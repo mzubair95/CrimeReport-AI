@@ -25,14 +25,28 @@ DEFAULT_DRAFT = {
     "evidence": [],                 # [{"name","type","bytes" (not persisted to disk raw), "ai_analysis"}]
     "victim": {},
     "summary": "",
+    "legal_references": [],         # Step 4 lookups — see ai/legal_service.py
 }
+
+
+def _fresh_draft() -> dict:
+    # dict(DEFAULT_DRAFT) is a shallow copy — nested lists/dicts would still be
+    # the SAME objects as DEFAULT_DRAFT's until reassigned here, so anything
+    # mutated in place elsewhere (.append(), etc.) must get a fresh container,
+    # or every session would end up sharing (and corrupting) one global list.
+    fresh = dict(DEFAULT_DRAFT)
+    for key in ("qa_history", "evidence", "legal_references"):
+        fresh[key] = []
+    for key in ("facts", "victim"):
+        fresh[key] = {}
+    return fresh
 
 
 def init_session():
     if "page" not in st.session_state:
         st.session_state.page = "home"
     if "draft" not in st.session_state:
-        st.session_state.draft = dict(DEFAULT_DRAFT)
+        st.session_state.draft = _fresh_draft()
     if "last_report_id" not in st.session_state:
         st.session_state.last_report_id = None
     if "last_submission" not in st.session_state:
@@ -40,11 +54,7 @@ def init_session():
 
 
 def reset_draft():
-    st.session_state.draft = dict(DEFAULT_DRAFT)
-    st.session_state.draft["qa_history"] = []
-    st.session_state.draft["evidence"] = []
-    st.session_state.draft["facts"] = {}
-    st.session_state.draft["victim"] = {}
+    st.session_state.draft = _fresh_draft()
 
 
 def draft() -> dict:
