@@ -7,7 +7,7 @@ import streamlit as st
 
 from config.settings import EMERGENCY_NUMBER
 from ui.components import brand_header, go_to, card, RED_DEEP
-from ui.state import reset_draft
+from ui.state import reset_draft, draft
 
 
 def render():
@@ -38,6 +38,7 @@ def render():
                   help="Continue into the AI-guided reporting flow quietly, "
                        "without a phone call — for when calling isn't safe."):
         reset_draft()
+        draft()["is_emergency"] = True  # they arrived via the Emergency page itself
         go_to("category_select")
 
     st.write("")

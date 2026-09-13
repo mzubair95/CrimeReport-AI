@@ -9,7 +9,7 @@ from ui.state import reset_draft
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(6, 6, "Step 6 of 6 — Submitted")
+    progress_bar(8, 8, "Step 8 of 8 — Submitted")
 
     report_id = st.session_state.get("last_report_id")
     submission = st.session_state.get("last_submission") or {}

@@ -18,7 +18,7 @@ logger = logging.getLogger("crime_report_ai.ui.questionnaire")
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(3, 6, "Step 3 of 6 — A few quick questions")
+    progress_bar(4, 8, "Step 4 of 8 — A few quick questions")
 
     d = draft()
 

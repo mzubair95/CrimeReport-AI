@@ -7,6 +7,7 @@ from __future__ import annotations
 import streamlit as st
 
 DEFAULT_DRAFT = {
+    "is_emergency": None,           # Step 0 answer — True/False, set before category selection
     "category": None,               # Step 1 user-selected category — canonical for
                                      # routing/legal-lookup/required-fields checklist
     "description": "",              # raw combined user text (typed + transcribed)

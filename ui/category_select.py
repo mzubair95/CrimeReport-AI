@@ -29,7 +29,7 @@ CATEGORY_ICONS = {
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(1, 6, "Step 1 of 6 — What happened?")
+    progress_bar(2, 8, "Step 2 of 8 — What happened?")
     st.markdown("### Choose the category that best fits")
     st.caption("You'll be able to describe it in your own words next — this just helps "
                "us ask the right follow-up questions.")

@@ -29,7 +29,7 @@ def render():
         go_to("category_select")
         return
 
-    progress_bar(2, 6, "Step 2 of 6 — Tell us what happened")
+    progress_bar(3, 8, "Step 3 of 8 — Tell us what happened")
     st.markdown(f"**Category:** {d['category']}")
     st.markdown("### How would you like to report?")
     st.caption("Use one or combine several — voice, a photo, and text together works great.")

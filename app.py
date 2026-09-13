@@ -26,17 +26,20 @@ PAGE_RENDERERS = {}
 
 def _load_pages():
     """Import page modules lazily so a single broken page can't crash routing."""
-    from ui import (home, emergency, category_select, report, questionnaire, evidence,
-                     review, submitted, status, dashboard, about, legal_lookup)
+    from ui import (home, emergency, emergency_check, category_select, report,
+                     questionnaire, evidence, review, false_reporting_notice,
+                     submitted, status, dashboard, about, legal_lookup)
     PAGE_RENDERERS.update({
         "home": home.render,
         "emergency": emergency.render,
+        "emergency_check": emergency_check.render,
         "category_select": category_select.render,
         "report": report.render,
         "questionnaire": questionnaire.render,
         "legal_lookup": legal_lookup.render,
         "evidence": evidence.render,
         "review": review.render,
+        "false_reporting_notice": false_reporting_notice.render,
         "submitted": submitted.render,
         "status": status.render,
         "dashboard": dashboard.render,
@@ -47,7 +50,7 @@ def _load_pages():
 _load_pages()
 
 current_page = st.session_state.get("page", "home")
-if current_page not in ("home", "emergency"):
+if current_page not in ("home", "emergency", "emergency_check"):
     top_nav(current_page)
 
 renderer = PAGE_RENDERERS.get(current_page, PAGE_RENDERERS["home"])

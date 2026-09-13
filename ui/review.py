@@ -1,5 +1,5 @@
-"""Report review screen (section 20) — explicit user confirmation required
-before anything is submitted."""
+"""Report review screen (section 20) — Step 5, editable summary before the
+false-reporting notice and final confirmation (Step 6)."""
 from __future__ import annotations
 
 import logging
@@ -7,8 +7,6 @@ import logging
 import streamlit as st
 
 from ai.summarizer import build_incident_summary
-from database.database import submit_report
-from reports.generator import to_json, to_pdf
 from ui.components import brand_header, go_to, progress_bar, card
 from ui.state import draft
 
@@ -17,7 +15,7 @@ logger = logging.getLogger("crime_report_ai.ui.review")
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(5, 6, "Step 5 of 6 — Review your report")
+    progress_bar(6, 8, "Step 6 of 8 — Review your report")
 
     d = draft()
 
@@ -75,9 +73,9 @@ def render():
     """)
 
     st.caption(
-        "By confirming, you acknowledge this report may contain AI-generated "
-        "content that you have reviewed for accuracy. This does not replace "
-        "emergency services or legal advice."
+        "This report may contain AI-generated content — review it carefully. "
+        "On the next step, you'll see a notice about false reporting and give "
+        "final confirmation before it's submitted."
     )
 
     col1, col2 = st.columns(2)
@@ -85,25 +83,5 @@ def render():
         if st.button("✏️ Edit", use_container_width=True):
             go_to("evidence")
     with col2:
-        if st.button("✅ CONFIRM REPORT", type="primary", use_container_width=True):
-            _confirm_and_submit(d)
-
-
-def _confirm_and_submit(d: dict):
-    with st.spinner("Generating your report and submitting..."):
-        try:
-            result = submit_report(dict(d))
-            report_id = result["report_id"]
-            pdf_bytes = to_pdf(d, report_id)
-            json_str = to_json(d, report_id)
-        except Exception:
-            logger.exception("Report generation/submission failed")
-            st.error("We're temporarily unable to generate your report. "
-                      "Please try again in a moment.")
-            return
-
-    st.session_state.last_report_id = report_id
-    st.session_state.last_submission = result
-    st.session_state.last_pdf_bytes = pdf_bytes
-    st.session_state.last_json_str = json_str
-    go_to("submitted")
+        if st.button("Continue →", type="primary", use_container_width=True):
+            go_to("false_reporting_notice")

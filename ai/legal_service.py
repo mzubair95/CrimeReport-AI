@@ -58,6 +58,53 @@ def lookup(category: str, description: str = "", top_k: int = 5) -> list[dict]:
     return results
 
 
+# Static fallback for the false-reporting notice (Step 6) — this notice must
+# always render even if Pinecone/embeddings are down at that moment, since
+# it's shown immediately before every submission regardless of category.
+# Mirrors the PPC 182 record in knowledge_base/legal/legal_references.json.
+_FALSE_REPORTING_FALLBACK = {
+    "statute": "PPC",
+    "section_number": "182",
+    "section_title": "False information with intent to cause a public servant to use "
+                      "his lawful power to the injury of another person",
+    "summary": "Applies to knowingly giving false information to a public servant "
+               "(including police), intending or knowing it is likely to cause that "
+               "public servant to act (or omit to act) improperly, or to injure/annoy "
+               "someone.",
+    "cognizable": "unknown — verify against CrPC Schedule II",
+    "bailable": "bailable (draft)",
+    "punishment_range": "Reported and amended over time — verify the current figure "
+                         "directly against the primary source before relying on it.",
+    "source_citation": "http://www.pljlawsite.com/html/ppc182.htm",
+}
+
+
+def get_false_reporting_notice() -> dict:
+    """
+    Step 6 — the PPC 182 (false information / false FIR) notice shown before
+    every submission, regardless of category. Uses an exact metadata filter
+    (category="Other" AND section_number="182") rather than semantic search,
+    since this specific citation must never be substituted for a different
+    one; falls back to a hard-coded copy of the same record if Pinecone is
+    unavailable, so this notice is never simply missing.
+    """
+    try:
+        vector = embed_query("false information false FIR PPC 182")
+        matches = pinecone_client.query(
+            vector, top_k=1,
+            filter={"category": {"$eq": "Other"}, "section_number": {"$eq": "182"}},
+            namespace=LEGAL_NAMESPACE,
+        )
+        if matches:
+            meta = matches[0].get("metadata", {}) if isinstance(matches[0], dict) \
+                else getattr(matches[0], "metadata", {})
+            if meta:
+                return dict(meta)
+    except Exception as exc:
+        logger.warning("False-reporting notice lookup failed, using fallback: %s", exc)
+    return dict(_FALSE_REPORTING_FALLBACK)
+
+
 DISCLAIMER = (
     "⚠️ These legal references are drafted from publicly available sources "
     "for informational purposes only — they are NOT legal advice and have "

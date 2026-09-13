@@ -35,6 +35,7 @@ def init_db() -> None:
                 created_at TEXT NOT NULL,
                 status TEXT NOT NULL,
                 category TEXT,
+                is_emergency INTEGER,
                 crime_type TEXT,
                 confidence REAL,
                 incident_date TEXT,
@@ -74,10 +75,23 @@ def init_db() -> None:
                 disclaimer_shown INTEGER NOT NULL DEFAULT 1
             )
         """)
-        # Lightweight migration for demo DBs created before `category` existed.
+        # Confirmations required before submission (FIR spec §3.1/Step 6) —
+        # e.g. the false-reporting notice acknowledgment and the accuracy
+        # consent, each with its own durable timestamp.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS confirmations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                report_id TEXT NOT NULL REFERENCES reports(report_id),
+                confirmation_type TEXT NOT NULL,
+                confirmed_at TEXT NOT NULL
+            )
+        """)
+        # Lightweight migration for demo DBs created before these columns existed.
         existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(reports)")}
         if "category" not in existing_cols:
             conn.execute("ALTER TABLE reports ADD COLUMN category TEXT")
+        if "is_emergency" not in existing_cols:
+            conn.execute("ALTER TABLE reports ADD COLUMN is_emergency INTEGER")
 
 
 def _next_report_id() -> str:
@@ -100,14 +114,15 @@ def create_report(report: dict) -> str:
     with _lock, _connect() as conn:
         conn.execute("""
             INSERT INTO reports (
-                report_id, created_at, status, category, crime_type, confidence,
-                incident_date, incident_time, location, description, summary,
-                authority_id, authority_name, facts_json, qa_history_json,
+                report_id, created_at, status, category, is_emergency, crime_type,
+                confidence, incident_date, incident_time, location, description,
+                summary, authority_id, authority_name, facts_json, qa_history_json,
                 evidence_json, victim_json
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             report_id, now, "RECEIVED",
-            report.get("category"), report.get("crime_type"), report.get("confidence"),
+            report.get("category"), 1 if report.get("is_emergency") else 0,
+            report.get("crime_type"), report.get("confidence"),
             report.get("incident_date"), report.get("incident_time"),
             report.get("location"), report.get("description"), report.get("summary"),
             report.get("authority_id"), report.get("authority_name"),
@@ -150,6 +165,28 @@ def get_legal_references(report_id: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def save_confirmation(report_id: str, confirmation_type: str) -> str:
+    """Records a required confirmation (FIR spec Step 6/§3.1) with a durable
+    timestamp — e.g. "false_reporting_notice" or "accuracy_consent". Returns
+    the timestamp recorded."""
+    confirmed_at = datetime.now(timezone.utc).isoformat()
+    with _lock, _connect() as conn:
+        conn.execute(
+            "INSERT INTO confirmations (report_id, confirmation_type, confirmed_at) "
+            "VALUES (?,?,?)",
+            (report_id, confirmation_type, confirmed_at),
+        )
+    return confirmed_at
+
+
+def get_confirmations(report_id: str) -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM confirmations WHERE report_id = ? ORDER BY id", (report_id,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def get_report(report_id: str) -> dict | None:
     with _connect() as conn:
         row = conn.execute("SELECT * FROM reports WHERE report_id = ?", (report_id,)).fetchone()
@@ -157,6 +194,7 @@ def get_report(report_id: str) -> dict | None:
         return None
     result = _row_to_dict(row)
     result["legal_references"] = get_legal_references(report_id)
+    result["confirmations"] = get_confirmations(report_id)
     return result
 
 
