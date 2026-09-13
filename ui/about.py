@@ -1,4 +1,4 @@
-"""About / Privacy page (sections 25-26)."""
+"""About / Responsible AI & Privacy page (PRD §16, §23)."""
 from __future__ import annotations
 
 import streamlit as st
@@ -11,45 +11,56 @@ from ui.components import brand_header, go_to
 
 def render():
     brand_header(show_tagline=False)
-    st.markdown("## ℹ️ About & Privacy")
+    st.markdown("## ℹ️ About, Responsible AI & Privacy")
 
     st.markdown("""
-**Crime Report.AI** is an AI-assisted crime reporting prototype built for a
-hackathon. It helps a person describe an incident in their own words —
-by text, voice, photo, or video — and uses AI to ask the right follow-up
-questions, classify the incident, and produce a structured report.
+**Crime Report** is an AI-powered civic safety platform prototype built for
+a hackathon (Pak Angels). It helps a citizen describe an incident in their
+own words — by text, voice, photo, or video, in English, Urdu, or Roman
+Urdu — and uses AI to classify it, assess urgency, ask the right follow-up
+questions, and produce a structured, reviewable case for an authorized
+reviewer to triage.
 
 ### What this app does
-- Uses an AI model (Google Gemini or xAI Grok, configurable) to understand
-  descriptions, analyze images/video, and generate follow-up questions.
-- Uses a Retrieval-Augmented Generation (RAG) system backed by Pinecone to
-  ground its questions in general reporting guidance.
-- Generates a downloadable PDF and JSON report and submits it to a **demo**
-  backend with a tracking ID.
+- Uses an AI model (configurable — Gemini, Grok, or Groq) to understand
+  descriptions, analyze images/video, generate follow-up questions, and
+  assess priority.
+- Runs verification-support checks: internal consistency, low-detail
+  reports, and duplicate/related-report detection — all surfaced as
+  neutral flags for a human reviewer, never as an accusation.
+- Checks evidence photos for plausible relevance to the incident and flags
+  (not automatically redacts) visible ID documents, phone numbers, or
+  faces for the reviewer's awareness.
+- Generates a downloadable PDF/JSON report and submits it to a **demo**
+  review queue with a case ID.
 
-### What this app does NOT do
-- It is **not** connected to real emergency dispatch or any real police
-  department's systems. All "authority" submission in this prototype is a
-  demo/simulated backend.
-- It does not provide legal advice.
-- It does not automatically accuse or identify anyone — AI image/video
-  analysis only describes what is visibly present.
+### What this app does NOT do (PRD Non-Goals)
+- It does **not** determine guilt, innocence, or legal liability.
+- It does **not** automatically accuse a person of committing a crime.
+- It does **not** independently dispatch police or emergency responders.
+- It does **not** perform facial recognition or identify private
+  individuals from images — a detected face is a privacy flag, not an
+  identification.
+- It is **not** connected to real emergency dispatch or any police
+  department's systems — every "submission" goes to a demo backend only.
 
 ### Privacy & data handling
-- Secrets (API keys) are stored only in environment variables, never in code
-  or version control.
-- Only the information needed to file and follow up on a report is
-  collected — no passwords or banking details are ever requested.
-- Original evidence files are kept separate from AI-generated summaries and
+- Secrets (API keys) are stored only in environment variables, never in
+  code or version control.
+- Data minimization: reporting anonymously is supported — no name, phone,
+  or email is required to submit a report.
+- Original evidence files are kept separate from AI-generated analysis and
   are never altered by the AI.
-- You must explicitly review and confirm your report before it is submitted.
+- You must explicitly review and confirm your report before it is
+  submitted, and every reviewer status change is logged for audit (FR-10).
 """)
 
     st.divider()
     st.markdown("**System status**")
     st.write(f"- LLM ({llm.provider_name()}): "
              f"{'✅ configured' if llm.is_available() else '⚠️ not configured'}")
-    st.write(f"- Pinecone RAG: {'✅ configured' if pinecone_client.is_available() else '⚠️ not configured'}")
+    st.write(f"- Pinecone RAG/duplicate detection: "
+             f"{'✅ configured' if pinecone_client.is_available() else '⚠️ not configured'}")
 
     st.divider()
     st.caption(DISCLAIMER)

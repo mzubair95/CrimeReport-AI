@@ -16,9 +16,13 @@ def extract_incident_facts(description: str) -> IncidentExtraction:
     Never invents missing information — uses null/None instead (section 7).
     """
     prompt = f"""You extract structured facts from a crime/incident report written
-by a member of the public. Only use information that is explicitly stated or
-strongly implied by the text. If something is not mentioned, use null — never
-guess or invent it.
+by a member of the public. The report may be written in English, Urdu (Urdu
+script), or Roman Urdu (Urdu written in Latin letters) — understand all
+three and extract the facts regardless of language; write the extracted
+field values in the same language the user used, except category-like
+fields which should stay concise. Only use information that is explicitly
+stated or strongly implied by the text. If something is not mentioned, use
+null — never guess or invent it.
 
 Return ONLY JSON matching this exact schema:
 {{
@@ -48,7 +52,8 @@ def classify_incident(description: str, extra_context: str = "") -> Classificati
     prompt = f"""Classify the following incident into EXACTLY ONE of these categories:
 {_CATEGORY_LIST}
 
-Use "Other" if nothing fits well. Return ONLY JSON:
+The description may be written in English, Urdu, or Roman Urdu — understand
+all three. Use "Other / Unclassified" if nothing fits well. Return ONLY JSON:
 {{"category": one of the categories above, "confidence": number 0-1, "explanation": short internal reasoning}}
 
 Incident description:
@@ -60,6 +65,6 @@ Additional context (may be empty):
     data = gemini.generate_json(prompt)
     result = safe_validate(ClassificationResult, data)
     if result and result.category not in CRIME_CATEGORIES:
-        result.category = "Other"
-    return result or ClassificationResult(category="Other", confidence=0.0,
+        result.category = "Other / Unclassified"
+    return result or ClassificationResult(category="Other / Unclassified", confidence=0.0,
                                            explanation="Classification unavailable.")

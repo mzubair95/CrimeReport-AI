@@ -1,10 +1,9 @@
 """
-Step 1 — Incident type selection (docs/FIR_TECHNICAL_SPEC.md §2).
-
-The user picks a category first; everything downstream (questionnaire
-checklist, legal lookup, authority routing) treats this as canonical. The AI
-classifier still runs later on the free-text description, but only as a
-soft confirmation/override signal — never overriding what the user tapped.
+Incident type selection (PRD §10). The user picks a category first;
+everything downstream (questionnaire checklist, severity assessment)
+treats this as canonical. The AI classifier still runs later on the
+free-text description, but only as a soft confirmation/override signal —
+never overriding what the user tapped.
 """
 from __future__ import annotations
 
@@ -16,20 +15,25 @@ from ui.state import draft
 
 # Emoji per category, purely cosmetic — falls back to a generic icon.
 CATEGORY_ICONS = {
-    "Robbery/Theft": "💰",
-    "Kidnapping": "🚨",
-    "Assault": "🤕",
-    "Cybercrime/Online Fraud": "💻",
-    "Harassment": "🗣️",
-    "Domestic Violence": "🏠",
+    "Theft / Pickpocketing": "💰",
+    "Robbery": "🚨",
     "Vehicle Theft": "🚗",
-    "Other": "📝",
+    "Assault / Physical Harm": "🤕",
+    "Harassment": "🗣️",
+    "Domestic / Family Safety": "🏠",
+    "Fraud / Scam": "🎭",
+    "Cybercrime": "💻",
+    "Missing Person": "🔍",
+    "Vandalism / Property Damage": "🔨",
+    "Suspicious Activity": "👀",
+    "Drug-related Incident": "💊",
+    "Other / Unclassified": "📝",
 }
 
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(2, 8, "Step 2 of 8 — What happened?")
+    progress_bar(1, 5, "Step 1 of 5 — What happened?")
     st.markdown("### Choose the category that best fits")
     st.caption("You'll be able to describe it in your own words next — this just helps "
                "us ask the right follow-up questions.")

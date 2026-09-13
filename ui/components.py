@@ -155,7 +155,7 @@ def top_nav(current: str):
     """Minimal, low-clutter navigation strip — kept small on purpose for
     someone reporting under stress."""
     cols = st.columns(4)
-    labels = [("home", "🏠 Home"), ("status", "🔎 Status"),
+    labels = [("home", "🏠 Home"), ("my_reports", "📄 My Reports"),
               ("dashboard", "📊 Dashboard"), ("about", "ℹ️ About")]
     for col, (key, label) in zip(cols, labels):
         with col:

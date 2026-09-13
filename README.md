@@ -1,104 +1,99 @@
-# 🛡️ Crime Report.AI
+# 🛡️ Crime Report
 
-**Report what happened. Let AI guide the rest.**
+**Report. Understand. Prioritize. Respond.**
 
-An AI-powered assistant that walks someone through reporting an incident —
-by typing, speaking, or uploading a photo/video — and produces a structured
-**FIR (First Information Report) draft** referencing the relevant Pakistani
-law (Pakistan Penal Code, PECA 2016, the Sindh Domestic Violence Act), ready
-to review, confirm, and bring to a police station. Built around Google
-Gemini / xAI Grok / Groq and a Retrieval-Augmented Generation (RAG) pipeline
-over Pinecone.
+An AI-powered civic safety platform prototype, built for the Pak Angels
+hackathon. A citizen describes an incident — by typing, speaking, or
+uploading a photo/video, in **English, Urdu, or Roman Urdu** — and the app
+converts it into a structured, prioritized, privacy-aware case for an
+**authorized reviewer** to triage: classified, urgency-scored, checked for
+internal inconsistencies and duplicate/related reports, with sensitive
+content in evidence photos flagged (not automatically redacted) for
+awareness.
 
-> ⚠️ **This is a hackathon prototype, not a legal or government product.**
-> It is **not** connected to real emergency dispatch, any police
-> department's systems, or any e-FIR portal. Legal references shown in the
-> app are drafted from public sources and have **not been verified by a
-> lawyer** — see [Disclaimer](#disclaimer) and
-> [docs/FIR_TECHNICAL_SPEC.md](docs/FIR_TECHNICAL_SPEC.md) for the full
-> caveats.
+> ⚠️ **This is a hackathon prototype.** It does not determine guilt,
+> innocence, or legal liability; it does not accuse anyone; it is not
+> connected to real emergency dispatch or any police department's systems.
+> See [Disclaimer](#disclaimer).
 
 ---
 
 ## Problem
 
-Filing an FIR is stressful and confusing, especially under pressure: victims
-often don't know which category their incident falls under, what the police
-will ask, which PPC/PECA section applies, or what a false-reporting warning
-even means — and writing a clear, complete account in the moment (often on a
-phone) is hard.
+Reporting an incident is often confusing and stressful for the person
+affected — they may not know the right channel, struggle to describe what
+happened in formal language, face a language barrier, or have no way to
+track a complaint afterward. On the receiving side, unstructured reports
+create manual work, duplicate cases, and make it hard to prioritize what's
+actually urgent.
 
 ## Solution
 
-Crime Report.AI turns that into a guided, 8-step conversation:
+Crime Report removes the burden of "writing a formal report" for the
+citizen, and the burden of manually triaging unstructured submissions for
+the reviewer:
 
-0. **Emergency check** — screens for "is this happening right now?" before
-   anything else, surfacing a tap-to-call to the Police Helpline.
-1. **Category** — the user picks the incident type first (tap, not typed).
-2. **Multimodal intake** — text, voice (auto-transcribed), photo, or video,
-   combinable.
-3. **Dynamic questionnaire** — AI-driven, category-aware follow-up
-   questions (what/when/where/who/suspect/witnesses/losses), never a fixed
-   form, and it stops once it has enough.
-4. **Legal reference lookup** — applicable PPC/PECA section(s),
-   cognizable/bailable status, and punishment range, retrieved from a
-   curated knowledge base (never guessed by the LLM).
-5. **Review** — an editable, AI-generated summary of everything so far.
-6. **False-reporting notice** — the PPC 182 penalty notice, with an explicit
-   confirmation required before submission.
-7. **Submission** — routed to a demo backend, with a tracking ID and a
-   downloadable **FIR draft PDF** to bring to the station.
+1. Understands a free-form description — in English, Urdu, or Roman Urdu —
+   and extracts structured facts.
+2. Classifies the incident into a controlled category and assesses urgency
+   (Critical/High/Medium/Low), always with an explainable reason.
+3. Asks only the follow-up questions still needed, one at a time, in the
+   reporter's chosen language — never a long fixed form.
+4. Runs verification-support checks: internal consistency, low-detail
+   reports, and duplicate/related-report detection — surfaced as neutral
+   flags for a human reviewer, never as an accusation.
+5. Checks evidence photos for relevance to the incident and flags (not
+   auto-redacts) visible faces, ID documents, or phone numbers.
+6. Produces a reviewable summary, a downloadable PDF/JSON, and a case ID,
+   then hands it to an authorized reviewer's triage dashboard.
 
 ## Features
 
 - 📝 Multimodal reporting — text, voice, photo, and video, combinable
-- 🆘 Emergency screening before the flow starts, with tap-to-call
-- 🧭 Category-first flow (8 Pakistan-relevant categories) with AI
-  classification as a confirmation signal, never the primary driver
-- 💬 Dynamic AI questionnaire, category-aware, no fixed script
-- ⚖️ Legal reference lookup (PPC / PECA 2016 / Sindh Domestic Violence Act)
-  via a dedicated RAG pipeline — grounded citations, not LLM recall
-- ⚠️ False-reporting notice (PPC 182) with mandatory confirmation before
-  submission
-- 🔒 CNIC collected with field-level encryption at rest; masked in the UI,
-  decrypted only on demand with an audit trail
-- 🕵️ Audit log for every access to a sensitive-category report (Domestic
-  Violence, Harassment)
-- 📷 Image evidence analysis (visible-only, never claims identity/intent)
-- 🎥 Video evidence analysis with automatic frame-extraction fallback
+- 🌐 English, Urdu, and Roman Urdu supported for intake and follow-up questions
+- 🧭 AI classification into 13 incident categories, confirmed/overridden by
+  the user's own category pick rather than trusted blindly
+- 🚦 Explainable urgency/severity scoring (Critical/High/Medium/Low)
+- 🔎 Verification-support engine: consistency/contradiction checks,
+  low-detail flagging, and embedding-based duplicate/related-report detection
+- 🔒 Evidence relevance + privacy detection (faces via local OpenCV,
+  ID documents/phone numbers via vision LLM) — flags for the reviewer,
+  never an identification
+- 🕶️ Anonymous reporting supported end-to-end (data minimization)
 - 🎙️ Voice input transcribed locally (faster-whisper) and editable
-- 📄 Formal **FIR draft PDF** + a general report PDF + structured JSON
-- 🏢 Modular "demo authority" routing layer with a tracking ID
-- 📊 Admin/demo dashboard
+- 📄 PDF + structured JSON report generation
+- 📊 Reviewer dashboard: filterable case queue, full case detail, status
+  workflow (Submitted → Under Review → Assigned → Resolved/Closed), and an
+  audited review-action log
 - 📱 Mobile-friendly responsive UI (desktop, Android, iPhone, tablet)
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    U[User: text / voice / photo / video] --> APP[Streamlit UI - 8 step flow]
+    U[Citizen: text / voice / photo / video, EN/UR/Roman Urdu] --> APP[Streamlit UI]
     APP --> LLM[LLM router: Gemini / Grok / Groq]
-    LLM -->|classify, extract, ask questions, summarize| APP
-    APP --> RAG[General RAG Retriever]
-    RAG --> PC[(Pinecone: default namespace)]
-    APP --> LEGAL[Legal RAG Service]
-    LEGAL --> PCL[(Pinecone: legal namespace)]
-    KB[knowledge_base/crimes,procedures] -->|rag/ingest.py| PC
-    KBL[knowledge_base/legal/legal_references.json] -->|rag/ingest.py| PCL
-    APP --> ENC[security/encryption.py - CNIC]
-    APP --> GEN[reports/generator.py + fir_template.py]
+    LLM -->|classify, extract, assess urgency, ask questions| APP
+    APP --> RAG[RAG Retriever]
+    RAG --> PC[(Pinecone: default namespace - reporting guidance)]
+    APP --> VER[Verification Engine]
+    VER -->|consistency + low-detail checks| LLM
+    APP --> DUP[Duplicate Detector]
+    DUP --> PCR[(Pinecone: reports namespace)]
+    APP --> VIS[Vision: relevance + privacy flags]
+    VIS --> CV[OpenCV face detection]
+    APP --> GEN[Report Generator - PDF + JSON]
     APP --> DB[(SQLite demo backend)]
-    DB --> AUDIT[audit_log]
-    DB --> SUB[submit_report - authority routing]
-    APP --> DASH[Admin Dashboard]
+    DB --> REVIEWER[Reviewer Dashboard]
+    REVIEWER -->|status changes| AUDIT[review_actions audit trail]
 ```
 
-**Request flow:** emergency check → category (user-selected, canonical) →
-multimodal intake → LLM classification (confirmation signal only) + general
-RAG informs the dynamic questionnaire → legal RAG lookup (exact
-category-filtered, never semantic-only) → review → false-reporting notice +
-confirmation → submission (CNIC encrypted, FIR PDF generated, routed to a
-demo authority) → tracking ID + downloadable FIR draft.
+**Request flow:** citizen input → LLM (understanding, classification,
+urgency) → RAG retrieval informs the dynamic questionnaire → verification
+engine checks consistency + flags low-detail reports → duplicate detector
+compares against prior reports → citizen reviews the AI summary and flags →
+confirms → PDF/JSON generated → lands in the reviewer dashboard's case queue
+with a case ID.
 
 ## Tech Stack
 
@@ -107,10 +102,10 @@ demo authority) → tracking ID + downloadable FIR draft.
 | Frontend/UI | Streamlit (responsive, mobile-friendly) |
 | Backend | Python 3.12 |
 | LLM / multimodal AI | Google Gemini (`google-genai` SDK), xAI Grok, or Groq (both OpenAI-compatible) — set via `LLM_PROVIDER` |
-| Vector database | Pinecone (`pinecone` SDK v5+), two namespaces: general guidance + legal citations |
+| Vector database | Pinecone (`pinecone` SDK v5+) — reporting-guidance and duplicate-detection namespaces |
 | Embeddings | sentence-transformers (`all-MiniLM-L6-v2`), swappable for Gemini embeddings |
 | Speech-to-text | faster-whisper (local, free, offline — independent of `LLM_PROVIDER`) |
-| Field-level encryption | `cryptography` (Fernet) — CNIC at rest |
+| Face detection | OpenCV Haar cascade (local, free, offline) |
 | Document parsing | pypdf, python-docx |
 | Report generation | reportlab (PDF), built-in `json` |
 | Config | python-dotenv, environment variables |
@@ -136,23 +131,19 @@ either feature.
 
 ```
 crime-report-ai/
-├── app.py                       # Streamlit entry point / router (8-step flow)
-├── config/settings.py           # Categories, required-fields checklist, authorities, keys
+├── app.py                     # Streamlit entry point / router (5-step reporting flow)
+├── config/settings.py          # Categories, severity levels, required-fields checklist
 ├── ai/                          # llm.py router (gemini/grok/groq), classifier, question
-│                                   engine, vision, summarizer, legal_service.py
-├── rag/                         # Embeddings, Pinecone client (namespace-aware),
-│                                   retriever, ingest.py (general + legal)
-├── security/encryption.py       # Fernet field-level encryption (CNIC)
+│                                  engine, urgency.py, verification.py, duplicate_detector.py,
+│                                  vision.py, summarizer.py
+├── rag/                         # Embeddings, Pinecone client (namespace-aware), retriever, ingest.py
 ├── input/                       # text / voice / image / video input handlers
-├── reports/                     # generator.py (PDF/JSON) + fir_template.py (FIR draft)
-├── database/database.py         # Demo backend (SQLite): reports, legal_references,
-│                                   confirmations, fir_documents, audit_log
-├── ui/                          # One module per screen — emergency_check, category_select,
-│                                   report, questionnaire, legal_lookup, evidence, review,
-│                                   false_reporting_notice, submitted, status, dashboard, about
-├── knowledge_base/              # crimes/, procedures/ (general RAG) + legal/ (statute RAG)
-├── docs/FIR_TECHNICAL_SPEC.md   # Full data model / screen flow / service-layer spec
-└── tests/                       # Offline-safe unit tests
+├── reports/generator.py         # PDF/JSON report generation
+├── database/database.py         # Demo backend (SQLite): reports, related_incidents, review_actions
+├── ui/                          # One module per screen — home, emergency, category_select, report,
+│                                  questionnaire, evidence, review, submitted, my_reports, dashboard, about
+├── knowledge_base/               # crimes/, procedures/ — general reporting-guidance RAG source docs
+└── tests/                        # Offline-safe unit tests
 ```
 
 ## Installation
@@ -176,14 +167,6 @@ GEMINI_API_KEY=your-gemini-key      # https://aistudio.google.com/apikey
 # GROQ_API_KEY=your-groq-key        # https://console.groq.com (only if LLM_PROVIDER=groq)
 PINECONE_API_KEY=your-pinecone-key  # https://app.pinecone.io
 PINECONE_INDEX=crime-report-ai
-FIELD_ENCRYPTION_KEY=               # generate below — required for CNIC handling
-```
-
-Generate the encryption key (do this once, keep it secret and stable —
-rotating it makes previously-stored CNICs undecryptable):
-
-```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
 **Never commit `.env`** — it's already in `.gitignore`.
@@ -194,12 +177,10 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 python -m rag.ingest
 ```
 
-This ingests both the general reporting-guidance documents
-(`knowledge_base/crimes/`, `knowledge_base/procedures/`) into Pinecone's
-default namespace, and the structured legal citations
-(`knowledge_base/legal/legal_references.json`) into a separate `legal`
-namespace, so a legal-reference lookup can never surface general guidance
-text instead of an actual statute.
+This ingests `knowledge_base/crimes/` and `knowledge_base/procedures/` into
+Pinecone's default namespace (created automatically if it doesn't exist
+yet). The duplicate-detection "reports" namespace is populated automatically
+as reports are submitted — no manual step needed.
 
 ## Run
 
@@ -213,15 +194,15 @@ automatically.
 
 ### Demo scenario
 
-Try this at Step 2 (after picking "Vehicle Theft") to see the full flow:
+Try this at the "Vehicle Theft" category, in Roman Urdu:
 
-> "My motorcycle was stolen from outside my house last night. It was
-> parked and locked."
+> "Meri bike kal market se chori ho gai thi. CCTV camera bhi laga hua hai."
 
-The app will confirm the category, ask category-specific follow-ups
-(registration number, color, witnesses...), show you the applicable PPC
-theft sections at Step 4, walk you through the false-reporting notice, and
-generate a downloadable FIR draft referencing those exact sections.
+The app will classify it as Vehicle Theft, assess a priority level with an
+explanation, ask category-specific follow-ups **in Roman Urdu**, then on the
+review screen show the AI summary, any verification flags, and possible
+duplicate matches before you confirm and get a case ID. Open the Reviewer
+Dashboard afterward to see the same case ready for triage.
 
 ## Deployment (Streamlit Community Cloud)
 
@@ -239,35 +220,26 @@ generate a downloadable FIR draft referencing those exact sections.
 
 - All secrets come from environment variables — **never hard-coded**.
   `.env` is git-ignored; only `.env.example` (placeholders) is committed.
-- **CNIC is field-level encrypted** (Fernet) before it ever reaches the
-  database — the plaintext value is stripped out before the rest of the
-  reporter record is stored, and only `decrypt_cnic()` can reveal it, which
-  always writes an audit log entry.
-- **Sensitive categories** (Domestic Violence, Harassment) go through an
-  audited read path — every access is logged with an actor, timestamp, and
-  category.
-- Minimal data collection: only what's needed to file and follow up on a
-  report. No passwords or banking details are ever requested.
-- The user must explicitly review, see the false-reporting notice, and
-  confirm before submission — two separately timestamped confirmations.
-- Original evidence files are never altered by AI — analysis is stored
-  alongside, clearly labeled as AI-generated.
-- Legal references are retrieved from a curated knowledge base via exact
-  category-filtered RAG — **never generated from an LLM's memory** — to
-  avoid a model confidently stating the wrong statute number.
+- **Data minimization**: anonymous reporting is a first-class option — no
+  name, phone, or email is required to submit a report.
+- **No facial recognition or identification**: a detected face is a privacy
+  flag for the reviewer's awareness, never an identification of a person.
+- Original evidence files are never altered by AI — analysis (including
+  privacy/relevance flags) is stored alongside, clearly labeled as
+  AI-generated.
+- Every reviewer status change is recorded in an audit trail
+  (`review_actions` table) — who changed what, when, and why.
+- Verification flags are always worded neutrally ("Needs Review",
+  "Information Inconsistent") — never an accusation, and never a
+  determination that a report is false.
 
 ## Disclaimer
 
-Crime Report.AI provides AI-assisted reporting support. AI-generated
-information — including summaries, classifications, and legal references —
-may contain errors and must be reviewed by the user before submission. It
-does **not** replace emergency services, law enforcement, or a qualified
-lawyer, and nothing it produces is legal advice. This is a hackathon
-prototype: no real government agency, e-FIR system, or emergency dispatch
-service is integrated — every "submission" goes only to a demo backend, and
-every generated FIR is a **draft** the user must bring to a real police
-station themselves. Legal citations (PPC/PECA/Sindh Domestic Violence Act
-sections, cognizable/bailable status, punishment ranges) are drafted from
-publicly available sources and **have not been verified by a lawyer** — see
-[docs/FIR_TECHNICAL_SPEC.md](docs/FIR_TECHNICAL_SPEC.md) §3.2 for sourcing
-details before relying on any of them.
+Crime Report provides AI-assisted reporting support. AI-generated
+classifications, priority levels, and verification flags may contain errors
+and are reviewed by an authorized human reviewer before any action is
+taken. The application does not replace emergency services or law
+enforcement, and does not determine guilt, innocence, or legal liability.
+This is a hackathon prototype: no real government agency, emergency
+dispatch system, or facial-recognition/identification capability is
+integrated — every "submission" goes only to a demo review queue.

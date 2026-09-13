@@ -32,7 +32,7 @@ def test_safe_validate_accepts_good_data():
 def test_question_engine_live_or_skips():
     from ai.question_engine import next_question
     step = next_question(
-        incident_type="Theft",
+        incident_type="Theft / Pickpocketing",
         original_description="Someone stole my phone from my car.",
         known_facts={"object_involved": "phone"},
         qa_history=[],

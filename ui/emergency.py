@@ -1,5 +1,5 @@
-"""Emergency mode (section 5) — clearly separated from AI assistance and
-from official authority submission. No real dispatch integration exists;
+"""Emergency Guidance (PRD §14 home action) — clearly separated from AI
+report intake and from review/triage. No real dispatch integration exists;
 everything here is explicitly labeled as a demo/configurable action."""
 from __future__ import annotations
 
@@ -7,16 +7,16 @@ import streamlit as st
 
 from config.settings import EMERGENCY_NUMBER
 from ui.components import brand_header, go_to, card, RED_DEEP
-from ui.state import reset_draft, draft
+from ui.state import reset_draft
 
 
 def render():
     brand_header(show_tagline=False)
-    st.markdown("## 🆘 Emergency")
+    st.markdown("## 🆘 Emergency Guidance")
 
     card(f"""
         <b>If you are in immediate danger, this app cannot help you directly.</b><br><br>
-        Call <b>Police Helpline {EMERGENCY_NUMBER}</b> (or your local emergency number) right now.
+        Call <b>{EMERGENCY_NUMBER}</b> (or your local emergency number) right now.
     """)
 
     st.markdown(
@@ -24,32 +24,30 @@ def render():
         f'style="text-decoration:none;">'
         f'<button style="width:100%;min-height:3.4rem;font-size:1.15rem;'
         f'font-weight:700;border-radius:14px;border:none;background:{RED_DEEP};'
-        f'color:white;">📞 CALL POLICE HELPLINE {EMERGENCY_NUMBER}</button>'
+        f'color:white;">📞 CALL {EMERGENCY_NUMBER}</button>'
         f'</a></div>',
         unsafe_allow_html=True,
     )
     st.caption(
-        "This button dials your device's phone app — Crime Report.AI is a "
+        "This button dials your device's phone app — Crime Report is a "
         "prototype and is **not** itself connected to any emergency dispatch system."
     )
 
     st.write("")
-    if st.button("🤫  START SILENT REPORT", use_container_width=True,
-                  help="Continue into the AI-guided reporting flow quietly, "
-                       "without a phone call — for when calling isn't safe."):
+    if st.button("📝  Report an Incident Instead", use_container_width=True,
+                  help="If this isn't an active emergency, continue to the guided report flow."):
         reset_draft()
-        draft()["is_emergency"] = True  # they arrived via the Emergency page itself
         go_to("category_select")
 
     st.write("")
-    if st.button("⬅️  EXIT", use_container_width=True):
+    if st.button("⬅️  Back to Home", use_container_width=True):
         go_to("home")
 
     st.write("")
     st.info(
-        "**AI assistance**, **emergency calling**, and **official authority "
-        "submission** are three separate things in this app. Using the AI "
-        "questionnaire never itself contacts emergency services or a real "
-        "police department.",
+        "**AI-assisted reporting**, **emergency calling**, and **authorized "
+        "review/response** are three separate things in this app. Using the "
+        "report flow never itself contacts emergency services or dispatches "
+        "a responder.",
         icon="ℹ️",
     )

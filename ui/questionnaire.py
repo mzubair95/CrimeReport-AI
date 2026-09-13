@@ -18,7 +18,7 @@ logger = logging.getLogger("crime_report_ai.ui.questionnaire")
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(4, 8, "Step 4 of 8 — A few quick questions")
+    progress_bar(3, 5, "Step 3 of 5 — A few quick questions")
 
     d = draft()
 
@@ -26,14 +26,9 @@ def render():
         go_to("category_select")
         return
 
-    col_cat, col_info = st.columns([4, 1])
-    with col_cat:
-        st.markdown(f"**Category:** {d['category']}")
-    with col_info:
-        if st.button("ℹ️ Info", help="See applicable legal references for this category",
-                     use_container_width=True):
-            st.session_state["legal_return_page"] = "questionnaire"
-            go_to("legal_lookup")
+    st.markdown(f"**Category:** {d['category']}")
+    if d.get("severity"):
+        st.caption(f"AI-suggested priority: **{d['severity']}** — {d.get('severity_reason', '')}")
 
     if d["crime_type"] and d["crime_type"] != d["category"]:
         st.caption(f"🤖 AI note: based on your description, this might instead be "
@@ -114,11 +109,12 @@ def _load_next_question():
     d = draft()
     try:
         step = next_question(
-            incident_type=d.get("category") or "Other",
+            incident_type=d.get("category") or "Other / Unclassified",
             original_description=d.get("description", ""),
             known_facts=d.get("facts", {}),
             qa_history=d.get("qa_history", []),
             rag_context=d.get("rag_context", ""),
+            language=d.get("language", "English"),
         )
     except Exception:
         logger.exception("Question engine failed")

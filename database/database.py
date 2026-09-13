@@ -1,7 +1,15 @@
 """
-Demo persistence layer (section 23/24) using SQLite — the "Demo backend"
-reports are submitted to. Swappable: replace this module's functions with
-calls to a real database/API without touching the UI layer (section 36).
+Demo persistence layer using SQLite — the "Authorized Reviewer" backend
+reports land in. Swappable: replace this module's functions with calls to a
+real database/API without touching the UI layer.
+
+Schema follows the PRD's Data Model (§15):
+  Incident        -> reports table
+  AI Assessment   -> columns on reports (severity, confidence, verification
+                     flags, model_version) — versioned per report; a demo
+                     scale doesn't need a separate assessment-history table
+  Related Incident -> related_incidents table (duplicate/correlation)
+  Review Action   -> review_actions table (reviewer audit trail)
 """
 from __future__ import annotations
 
@@ -11,7 +19,7 @@ import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
-from config.settings import DB_PATH, REPORTS_DIR
+from config.settings import DB_PATH
 
 _lock = threading.Lock()
 
@@ -35,21 +43,23 @@ def init_db() -> None:
                 created_at TEXT NOT NULL,
                 status TEXT NOT NULL,
                 category TEXT,
-                is_emergency INTEGER,
                 crime_type TEXT,
                 confidence REAL,
+                severity TEXT,
+                severity_reason TEXT,
                 incident_date TEXT,
                 incident_time TEXT,
                 location TEXT,
                 description TEXT,
                 summary TEXT,
-                authority_id TEXT,
-                authority_name TEXT,
+                language TEXT,
+                anonymous INTEGER NOT NULL DEFAULT 0,
+                model_version TEXT,
                 facts_json TEXT,
                 qa_history_json TEXT,
                 evidence_json TEXT,
-                victim_json TEXT,
-                reporter_cnic_enc BLOB
+                reporter_json TEXT,
+                verification_flags_json TEXT
             )
         """)
         conn.execute("""
@@ -58,70 +68,30 @@ def init_db() -> None:
                 counter INTEGER NOT NULL
             )
         """)
-        # Legal reference lookups shown to the user for a report (FIR spec §3.1) —
-        # persisted separately so the exact citation shown at the time is
-        # auditable even if the knowledge base changes later.
+        # Related Incident (PRD §15) — duplicate/correlation results from
+        # ai/duplicate_detector.py, persisted so a reviewer can see why two
+        # cases were linked.
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS legal_references (
+            CREATE TABLE IF NOT EXISTS related_incidents (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 report_id TEXT NOT NULL REFERENCES reports(report_id),
-                statute TEXT NOT NULL,
-                section_number TEXT NOT NULL,
-                section_title TEXT,
-                cognizable TEXT,
-                bailable TEXT,
-                punishment_range TEXT,
-                source_citation TEXT NOT NULL,
-                retrieved_at TEXT NOT NULL,
-                disclaimer_shown INTEGER NOT NULL DEFAULT 1
+                related_report_id TEXT NOT NULL REFERENCES reports(report_id),
+                similarity_score REAL NOT NULL,
+                reason TEXT,
+                detected_at TEXT NOT NULL
             )
         """)
-        # Generated FIR draft PDFs (FIR spec §3.1/Step 8) — the file itself
-        # lives under data/reports/, this row tracks which version was
-        # generated when.
+        # Review Action (PRD §15) — audit trail of reviewer decisions (FR-10).
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS fir_documents (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+            CREATE TABLE IF NOT EXISTS review_actions (
+                action_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 report_id TEXT NOT NULL REFERENCES reports(report_id),
-                version INTEGER NOT NULL DEFAULT 1,
-                pdf_path TEXT NOT NULL,
-                template_version TEXT NOT NULL,
-                generated_at TEXT NOT NULL
-            )
-        """)
-        # Confirmations required before submission (FIR spec §3.1/Step 6) —
-        # e.g. the false-reporting notice acknowledgment and the accuracy
-        # consent, each with its own durable timestamp.
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS confirmations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                report_id TEXT NOT NULL REFERENCES reports(report_id),
-                confirmation_type TEXT NOT NULL,
-                confirmed_at TEXT NOT NULL
-            )
-        """)
-        # Audit trail (FIR spec §3.1/§4.4) — every access to a sensitive-category
-        # report (Domestic Violence, Harassment) and every CNIC decryption is
-        # logged here, durably, regardless of whether the knowledge base or
-        # anything else changes later.
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS audit_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                report_id TEXT REFERENCES reports(report_id),
-                actor TEXT NOT NULL,
+                reviewer_id TEXT NOT NULL,
                 action TEXT NOT NULL,
-                details TEXT,
+                note TEXT,
                 occurred_at TEXT NOT NULL
             )
         """)
-        # Lightweight migration for demo DBs created before these columns existed.
-        existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(reports)")}
-        if "category" not in existing_cols:
-            conn.execute("ALTER TABLE reports ADD COLUMN category TEXT")
-        if "is_emergency" not in existing_cols:
-            conn.execute("ALTER TABLE reports ADD COLUMN is_emergency INTEGER")
-        if "reporter_cnic_enc" not in existing_cols:
-            conn.execute("ALTER TABLE reports ADD COLUMN reporter_cnic_enc BLOB")
 
 
 def _next_report_id() -> str:
@@ -138,114 +108,81 @@ def _next_report_id() -> str:
 
 
 def create_report(report: dict) -> str:
-    """Persists a report and returns its newly generated tracking ID.
-
-    CNIC (FIR spec §4.4) is encrypted before storage and never written to
-    victim_json in plaintext — it lives only in the encrypted
-    reporter_cnic_enc column, decryptable only via decrypt_cnic() (which
-    audit-logs every decryption)."""
-    from security.encryption import encrypt_field
-
+    """Persists a report (status starts at 'Submitted') and returns its
+    newly generated tracking ID."""
     report_id = _next_report_id()
     now = datetime.now(timezone.utc).isoformat()
-
-    victim = dict(report.get("victim") or {})
-    cnic_plaintext = victim.pop("cnic", None)  # never goes into victim_json
-    cnic_enc = encrypt_field(cnic_plaintext) if cnic_plaintext else None
-
+    reporter = {} if report.get("anonymous") else dict(report.get("reporter") or {})
     with _lock, _connect() as conn:
         conn.execute("""
             INSERT INTO reports (
-                report_id, created_at, status, category, is_emergency, crime_type,
-                confidence, incident_date, incident_time, location, description,
-                summary, authority_id, authority_name, facts_json, qa_history_json,
-                evidence_json, victim_json, reporter_cnic_enc
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                report_id, created_at, status, category, crime_type, confidence,
+                severity, severity_reason, incident_date, incident_time, location,
+                description, summary, language, anonymous, model_version,
+                facts_json, qa_history_json, evidence_json, reporter_json,
+                verification_flags_json
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
-            report_id, now, "RECEIVED",
-            report.get("category"), 1 if report.get("is_emergency") else 0,
-            report.get("crime_type"), report.get("confidence"),
+            report_id, now, "Submitted",
+            report.get("category"), report.get("crime_type"), report.get("confidence"),
+            report.get("severity"), report.get("severity_reason"),
             report.get("incident_date"), report.get("incident_time"),
             report.get("location"), report.get("description"), report.get("summary"),
-            report.get("authority_id"), report.get("authority_name"),
+            report.get("language"), 1 if report.get("anonymous") else 0,
+            report.get("model_version"),
             json.dumps(report.get("facts", {})),
             json.dumps(report.get("qa_history", [])),
             json.dumps(report.get("evidence", [])),
-            json.dumps(victim),
-            cnic_enc,
+            json.dumps(reporter),
+            json.dumps(report.get("verification_flags", [])),
         ))
     return report_id
 
 
-def save_legal_references(report_id: str, refs: list[dict]) -> None:
-    """Persists the exact legal citations shown to the user for this report
-    (FIR spec §3.1) — a durable, auditable record separate from whatever the
-    knowledge base looks like later."""
-    if not refs:
+def save_related_incidents(report_id: str, matches: list[dict]) -> None:
+    """Persists duplicate/related-incident matches found at submission time
+    (PRD §15 Related Incident, AI Modules "Duplicate Detection")."""
+    if not matches:
         return
+    now = datetime.now(timezone.utc).isoformat()
     with _lock, _connect() as conn:
-        for ref in refs:
+        for m in matches:
             conn.execute("""
-                INSERT INTO legal_references (
-                    report_id, statute, section_number, section_title,
-                    cognizable, bailable, punishment_range, source_citation,
-                    retrieved_at, disclaimer_shown
-                ) VALUES (?,?,?,?,?,?,?,?,?,?)
-            """, (
-                report_id, ref.get("statute", ""), ref.get("section_number", ""),
-                ref.get("section_title"), ref.get("cognizable"), ref.get("bailable"),
-                ref.get("punishment_range"), ref.get("source_citation", ""),
-                ref.get("retrieved_at", datetime.now(timezone.utc).isoformat()),
-                1 if ref.get("disclaimer_shown", True) else 0,
-            ))
+                INSERT INTO related_incidents (report_id, related_report_id, similarity_score, reason, detected_at)
+                VALUES (?,?,?,?,?)
+            """, (report_id, m["report_id"], m["similarity"], m.get("reason", ""), now))
 
 
-def get_legal_references(report_id: str) -> list[dict]:
+def get_related_incidents(report_id: str) -> list[dict]:
     with _connect() as conn:
         rows = conn.execute(
-            "SELECT * FROM legal_references WHERE report_id = ? ORDER BY id", (report_id,)
-        ).fetchall()
-    return [dict(r) for r in rows]
-
-
-def save_confirmation(report_id: str, confirmation_type: str) -> str:
-    """Records a required confirmation (FIR spec Step 6/§3.1) with a durable
-    timestamp — e.g. "false_reporting_notice" or "accuracy_consent". Returns
-    the timestamp recorded."""
-    confirmed_at = datetime.now(timezone.utc).isoformat()
-    with _lock, _connect() as conn:
-        conn.execute(
-            "INSERT INTO confirmations (report_id, confirmation_type, confirmed_at) "
-            "VALUES (?,?,?)",
-            (report_id, confirmation_type, confirmed_at),
-        )
-    return confirmed_at
-
-
-def get_confirmations(report_id: str) -> list[dict]:
-    with _connect() as conn:
-        rows = conn.execute(
-            "SELECT * FROM confirmations WHERE report_id = ? ORDER BY id", (report_id,)
-        ).fetchall()
-    return [dict(r) for r in rows]
-
-
-def save_fir_document(report_id: str, pdf_bytes: bytes, template_version: str) -> str:
-    """Writes the generated FIR draft PDF to disk and records it (FIR spec
-    §3.1/Step 8). Returns the file path written."""
-    with _lock, _connect() as conn:
-        version = (conn.execute(
-            "SELECT COALESCE(MAX(version), 0) + 1 AS v FROM fir_documents WHERE report_id = ?",
+            "SELECT * FROM related_incidents WHERE report_id = ? ORDER BY similarity_score DESC",
             (report_id,),
-        ).fetchone())["v"]
-        pdf_path = REPORTS_DIR / f"{report_id}_fir_v{version}.pdf"
-        pdf_path.write_bytes(pdf_bytes)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def record_review_action(report_id: str, reviewer_id: str, action: str, note: str = "") -> None:
+    """Audit trail for reviewer decisions (FR-10) — e.g. status changes."""
+    with _lock, _connect() as conn:
         conn.execute("""
-            INSERT INTO fir_documents (report_id, version, pdf_path, template_version, generated_at)
+            INSERT INTO review_actions (report_id, reviewer_id, action, note, occurred_at)
             VALUES (?,?,?,?,?)
-        """, (report_id, version, str(pdf_path), template_version,
-              datetime.now(timezone.utc).isoformat()))
-    return str(pdf_path)
+        """, (report_id, reviewer_id, action, note, datetime.now(timezone.utc).isoformat()))
+
+
+def get_review_actions(report_id: str) -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM review_actions WHERE report_id = ? ORDER BY action_id", (report_id,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def update_status(report_id: str, status: str, reviewer_id: str = "reviewer", note: str = "") -> None:
+    with _lock, _connect() as conn:
+        conn.execute("UPDATE reports SET status = ? WHERE report_id = ?", (status, report_id))
+    record_review_action(report_id, reviewer_id, f"status_changed:{status}", note)
 
 
 def get_report(report_id: str) -> dict | None:
@@ -254,36 +191,45 @@ def get_report(report_id: str) -> dict | None:
     if not row:
         return None
     result = _row_to_dict(row)
-    result["legal_references"] = get_legal_references(report_id)
-    result["confirmations"] = get_confirmations(report_id)
+    result["related_incidents"] = get_related_incidents(report_id)
+    result["review_actions"] = get_review_actions(report_id)
     return result
 
 
-def list_reports(limit: int = 50) -> list[dict]:
+def list_reports(limit: int = 200, category: str | None = None, severity: str | None = None,
+                  status: str | None = None) -> list[dict]:
+    query = "SELECT * FROM reports WHERE 1=1"
+    params: list = []
+    if category:
+        query += " AND category = ?"
+        params.append(category)
+    if severity:
+        query += " AND severity = ?"
+        params.append(severity)
+    if status:
+        query += " AND status = ?"
+        params.append(status)
+    query += " ORDER BY created_at DESC LIMIT ?"
+    params.append(limit)
     with _connect() as conn:
-        rows = conn.execute(
-            "SELECT * FROM reports ORDER BY created_at DESC LIMIT ?", (limit,)
-        ).fetchall()
+        rows = conn.execute(query, params).fetchall()
     return [_row_to_dict(r) for r in rows]
-
-
-def update_status(report_id: str, status: str) -> None:
-    with _lock, _connect() as conn:
-        conn.execute("UPDATE reports SET status = ? WHERE report_id = ?", (status, report_id))
 
 
 def dashboard_stats() -> dict:
     with _connect() as conn:
         total = conn.execute("SELECT COUNT(*) c FROM reports").fetchone()["c"]
         open_count = conn.execute(
-            "SELECT COUNT(*) c FROM reports WHERE status != 'CLOSED'"
+            "SELECT COUNT(*) c FROM reports WHERE status NOT IN ('Resolved','Closed')"
         ).fetchone()["c"]
-        submitted = conn.execute(
-            "SELECT COUNT(*) c FROM reports WHERE status IN ('RECEIVED','SUBMITTED','IN_REVIEW')"
-        ).fetchone()["c"]
-        by_type = conn.execute(
-            "SELECT COALESCE(category, crime_type) AS cat, COUNT(*) c FROM reports "
-            "GROUP BY cat ORDER BY c DESC"
+        by_status = conn.execute(
+            "SELECT status, COUNT(*) c FROM reports GROUP BY status"
+        ).fetchall()
+        by_category = conn.execute(
+            "SELECT category, COUNT(*) c FROM reports GROUP BY category ORDER BY c DESC"
+        ).fetchall()
+        by_severity = conn.execute(
+            "SELECT severity, COUNT(*) c FROM reports GROUP BY severity"
         ).fetchall()
         by_date = conn.execute(
             "SELECT substr(created_at,1,10) d, COUNT(*) c FROM reports GROUP BY d ORDER BY d"
@@ -291,87 +237,39 @@ def dashboard_stats() -> dict:
     return {
         "total": total,
         "open": open_count,
-        "submitted": submitted,
-        "by_type": {r["cat"] or "Unknown": r["c"] for r in by_type},
+        "by_status": {r["status"]: r["c"] for r in by_status},
+        "by_category": {r["category"] or "Unknown": r["c"] for r in by_category},
+        "by_severity": {r["severity"] or "Unassessed": r["c"] for r in by_severity},
         "by_date": {r["d"]: r["c"] for r in by_date},
     }
 
 
 def submit_report(report: dict) -> dict:
     """
-    Modular submission layer (section 23). For this hackathon MVP, every
-    report goes to the demo backend (this SQLite database) and is routed to
-    whichever configured "authority" handles its crime type. No real agency
-    is contacted — this function is the single seam where a real, authorized
-    government API integration would be plugged in later, without changing
-    any UI code.
+    Section 23-style modular submission layer. For this hackathon MVP, every
+    report goes to the demo backend (this SQLite database) with status
+    'Submitted', ready for an authorized reviewer to triage.
     """
-    from config.settings import AUTHORITIES
-
-    category = report.get("category") or report.get("crime_type", "Other")
-    authority = next((a for a in AUTHORITIES if category in a["handles"]), AUTHORITIES[0])
-    report["authority_id"] = authority["id"]
-    report["authority_name"] = authority["name"]
-
     report_id = create_report(report)
-    save_legal_references(report_id, report.get("legal_references") or [])
+    matches = report.get("duplicate_matches") or []
+    save_related_incidents(report_id, matches)
     return {
         "report_id": report_id,
-        "status": "RECEIVED",
-        "authority_name": authority["name"],
-        "note": "Submitted to the demo backend. No real law-enforcement agency "
-                "has been contacted by this hackathon prototype.",
+        "status": "Submitted",
+        "note": "Submitted to the demo review queue. An authorized reviewer "
+                "will triage this report; no real emergency dispatch has "
+                "been contacted by this hackathon prototype.",
     }
 
 
 def _row_to_dict(row: sqlite3.Row) -> dict:
     d = dict(row)
-    for key in ("facts_json", "qa_history_json", "evidence_json", "victim_json"):
+    for key in ("facts_json", "qa_history_json", "evidence_json", "reporter_json",
+                "verification_flags_json"):
+        target = key.replace("_json", "")
+        default = "[]" if target in ("qa_history", "evidence", "verification_flags") else "{}"
         try:
-            d[key.replace("_json", "")] = json.loads(d.pop(key) or "{}")
+            d[target] = json.loads(d.pop(key) or default)
         except (json.JSONDecodeError, TypeError):
-            d[key.replace("_json", "")] = {}
-    # Never surface the encrypted CNIC blob through the general accessor —
-    # only decrypt_cnic() may reveal it, and only with an audit log entry.
-    d.pop("reporter_cnic_enc", None)
+            d[target] = [] if target in ("qa_history", "evidence", "verification_flags") else {}
     return d
-
-
-def decrypt_cnic(report_id: str, actor: str) -> str | None:
-    """Decrypts and returns the reporter's CNIC for one report — every call
-    writes an audit_log entry (FIR spec §4.4), since this is the one field
-    in the whole app that reveals a national ID number."""
-    from security.encryption import decrypt_field
-
-    with _connect() as conn:
-        row = conn.execute(
-            "SELECT reporter_cnic_enc FROM reports WHERE report_id = ?", (report_id,)
-        ).fetchone()
-    if not row or not row["reporter_cnic_enc"]:
-        return None
-    write_audit_log(report_id, actor, "cnic_decrypted")
-    return decrypt_field(row["reporter_cnic_enc"])
-
-
-def write_audit_log(report_id: str | None, actor: str, action: str,
-                     details: dict | None = None) -> None:
-    with _lock, _connect() as conn:
-        conn.execute(
-            "INSERT INTO audit_log (report_id, actor, action, details, occurred_at) "
-            "VALUES (?,?,?,?,?)",
-            (report_id, actor, action, json.dumps(details) if details else None,
-             datetime.now(timezone.utc).isoformat()),
-        )
-
-
-def get_report_audited(report_id: str, actor: str) -> dict | None:
-    """Same as get_report(), but for sensitive categories (Domestic Violence,
-    Harassment) writes an audit_log entry on every access — the exact access
-    pattern the FIR spec calls for so those reports can never be browsed
-    without a durable trail (§4.4)."""
-    from config.settings import SENSITIVE_CATEGORIES
-
-    report = get_report(report_id)
-    if report and report.get("category") in SENSITIVE_CATEGORIES:
-        write_audit_log(report_id, actor, "viewed", {"category": report.get("category")})
-    return report

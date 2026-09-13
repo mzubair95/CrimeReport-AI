@@ -65,19 +65,21 @@ def to_pdf(report: dict, report_id: str) -> bytes:
                              leftMargin=0.7 * inch, rightMargin=0.7 * inch)
     story = []
 
-    story.append(Paragraph("Crime Report.AI — Incident Report", styles["ReportTitle"]))
+    story.append(Paragraph("Crime Report — Incident Report", styles["ReportTitle"]))
     story.append(Paragraph(
-        f"Report ID: {report_id} &nbsp;|&nbsp; Generated: "
+        f"Case ID: {report_id} &nbsp;|&nbsp; Generated: "
         f"{datetime.now(timezone.utc).strftime('%d %B %Y, %H:%M UTC')}",
         styles["ReportSubtitle"]))
     story.append(HRFlowable(width="100%", color=colors.HexColor("#E2E8F0")))
 
     story.append(Paragraph("Incident", styles["SectionHeading"]))
     story.append(_field_table([
-        ("Type", report.get("category") or report.get("crime_type")),
+        ("Category", report.get("category") or report.get("crime_type")),
+        ("Priority", f"{report.get('severity') or 'Not assessed'} — {report.get('severity_reason', '')}"),
         ("Date", report.get("incident_date")),
         ("Time", report.get("incident_time")),
         ("Location", report.get("location")),
+        ("Language", report.get("language")),
     ]))
 
     story.append(Paragraph("Summary", styles["SectionHeading"]))
@@ -108,29 +110,35 @@ def to_pdf(report: dict, report_id: str) -> bytes:
     else:
         story.append(Paragraph("No evidence files attached.", styles["Body"]))
 
-    legal_refs = report.get("legal_references") or []
-    if legal_refs:
-        story.append(Paragraph("Applicable Legal References (Unverified — See Disclaimer)",
+    flags = report.get("verification_flags") or []
+    if flags:
+        story.append(Paragraph("Verification Notes (Neutral — Not an Accusation)",
                                 styles["SectionHeading"]))
-        for ref in legal_refs:
+        for f in flags:
             story.append(Paragraph(
-                f"<b>{ref.get('statute', '')} § {ref.get('section_number', '')}</b> — "
-                f"{ref.get('section_title', '')}. Cognizable: {ref.get('cognizable', 'unknown')}. "
-                f"Bailable: {ref.get('bailable', 'unknown')}. "
-                f"Punishment: {ref.get('punishment_range', 'unknown')}.",
+                f"<b>{f.get('flag_type', '').replace('_', ' ').title()}:</b> {f.get('message', '')}",
                 styles["Small"]))
 
-    victim = report.get("victim") or {}
-    if victim:
+    dupes = report.get("duplicate_matches") or []
+    if dupes:
+        story.append(Paragraph("Possibly Related Reports", styles["SectionHeading"]))
+        for m in dupes:
+            story.append(Paragraph(f"{m.get('report_id', '')} — {m.get('reason', '')}", styles["Small"]))
+
+    if report.get("anonymous"):
         story.append(Paragraph("Reporter Information", styles["SectionHeading"]))
-        story.append(_field_table([
-            ("Full name", victim.get("full_name")),
-            ("CNIC", victim.get("cnic")),
-            ("Phone", victim.get("phone")),
-            ("Email", victim.get("email")),
-            ("Address", victim.get("address")),
-            ("Preferred contact", victim.get("preferred_contact")),
-        ]))
+        story.append(Paragraph("Submitted anonymously.", styles["Body"]))
+    else:
+        reporter = report.get("reporter") or {}
+        if reporter:
+            story.append(Paragraph("Reporter Information", styles["SectionHeading"]))
+            story.append(_field_table([
+                ("Full name", reporter.get("full_name")),
+                ("Phone", reporter.get("phone")),
+                ("Email", reporter.get("email")),
+                ("Address", reporter.get("address")),
+                ("Preferred contact", reporter.get("preferred_contact")),
+            ]))
 
     story.append(Spacer(1, 0.3 * inch))
     story.append(HRFlowable(width="100%", color=colors.HexColor("#E2E8F0")))

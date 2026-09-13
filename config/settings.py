@@ -1,6 +1,10 @@
 """
 Central configuration. Everything secret comes from environment variables
 (loaded from .env via python-dotenv), never hard-coded.
+
+Aligned to the "Crime Report" PRD (Pak Angels hackathon) — a citizen
+incident-reporting + AI triage/verification platform, not a legal-document
+generator. See README.md for the product summary.
 """
 import os
 from pathlib import Path
@@ -11,10 +15,10 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ---- Secrets / API config (never hard-code these) ----
-# Which LLM backend powers classification/questions/summaries/vision (section 36:
-# the LLM must be swappable without rewriting the app). "gemini" (default),
-# "grok" (xAI), or "groq" (Groq's fast-inference open-model hosting — note this
-# is a different company from Grok/xAI despite the near-identical name).
+# Which LLM backend powers classification/questions/summaries/vision (the LLM
+# must be swappable without rewriting the app). "gemini" (default), "grok"
+# (xAI), or "groq" (Groq's fast-inference open-model hosting — note this is a
+# different company from Grok/xAI despite the near-identical name).
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -37,19 +41,14 @@ PINECONE_INDEX = os.getenv("PINECONE_INDEX", "crime-report-ai")
 EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers")
 EMBEDDING_DIMENSION = 384  # all-MiniLM-L6-v2 output size; update if provider changes
 
-# Local, free, offline speech-to-text for voice input (section 8/36) — kept
-# independent of whichever LLM_PROVIDER is chosen, since not every LLM API
-# accepts raw audio the way Gemini does. "" disables transcription gracefully.
+# Local, free, offline speech-to-text for voice input — kept independent of
+# whichever LLM_PROVIDER is chosen, since not every LLM API accepts raw
+# audio the way Gemini does. "" disables transcription gracefully.
 WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")
 
-# Field-level encryption key for sensitive PII (currently: CNIC) — see
-# security/encryption.py and FIR spec §4.4. Generate one with:
-#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", "")
-
 # ---- App-level config ----
-APP_NAME = "Crime Report.AI"
-APP_TAGLINE = "Report what happened. Let AI guide the rest."
+APP_NAME = "Crime Report"
+APP_TAGLINE = "Report. Understand. Prioritize. Respond."
 
 DATA_DIR = BASE_DIR / "data"
 UPLOADS_DIR = DATA_DIR / "uploads"
@@ -60,66 +59,60 @@ for _d in (DATA_DIR, UPLOADS_DIR, REPORTS_DIR, DB_DIR):
 
 DB_PATH = DB_DIR / "crime_report.sqlite3"
 
-# Controlled classification categories (section 11), aligned to the Step 1
-# tappable categories in docs/FIR_TECHNICAL_SPEC.md. The user picks one of
-# these first; the AI classifier (ai/classifier.py) then acts as a
-# confirmation/override signal rather than the primary driver.
+# Incident categories (PRD §10).
 CRIME_CATEGORIES = [
-    "Robbery/Theft", "Kidnapping", "Assault", "Cybercrime/Online Fraud",
-    "Harassment", "Domestic Violence", "Vehicle Theft", "Other",
+    "Theft / Pickpocketing", "Robbery", "Vehicle Theft", "Assault / Physical Harm",
+    "Harassment", "Domestic / Family Safety", "Fraud / Scam", "Cybercrime",
+    "Missing Person", "Vandalism / Property Damage", "Suspicious Activity",
+    "Drug-related Incident", "Other / Unclassified",
 ]
 
-# Category-specific "must eventually cover" fields (spec §4.3). The dynamic
-# questionnaire engine (ai/question_engine.py) passes these to the LLM as
-# guidance so the adaptive conversation still reliably covers what/when/
-# where/who/suspect/witnesses/losses-injuries per category, without turning
-# it into a rigid fixed form.
-CATEGORY_REQUIRED_FIELDS = {
-    "Robbery/Theft": ["what_taken", "when", "where", "suspect_description", "witnesses", "value_lost"],
-    "Kidnapping": ["who_taken", "when", "where_last_seen", "suspect_description", "witnesses", "demands_made"],
-    "Assault": ["who_involved", "when", "where", "injuries", "witnesses", "weapon_involved"],
-    "Cybercrime/Online Fraud": ["platform_or_account", "when", "financial_loss", "suspect_info", "evidence_saved"],
-    "Harassment": ["nature_of_contact", "frequency", "relationship_to_suspect", "witnesses"],
-    "Domestic Violence": ["relationship_to_suspect", "when", "injuries", "immediate_safety_risk", "prior_incidents"],
-    "Vehicle Theft": ["vehicle_details", "when", "where", "registration_number", "witnesses"],
-    "Other": ["what", "when", "where", "who"],
+# Severity / triage levels (PRD §11), most severe first.
+SEVERITY_LEVELS = ["Critical", "High", "Medium", "Low"]
+SEVERITY_MEANING = {
+    "Critical": "Potential immediate threat to life or safety",
+    "High": "Serious incident needing quick attention",
+    "Medium": "Investigation/review required",
+    "Low": "Non-urgent or informational",
 }
 
-# Configurable authority layer (section 12/23) — informational only for the MVP.
-# A real deployment would populate each authority's actual submission endpoint.
-AUTHORITIES = [
-    {
-        "id": "demo-local-police",
-        "name": "Demo Local Police Department (non-emergency)",
-        "handles": ["Robbery/Theft", "Vehicle Theft", "Assault", "Kidnapping", "Other"],
-        "integration": "demo",  # "demo" = no real agency is connected
-        "contact": "Configure a real non-emergency line in production.",
-    },
-    {
-        "id": "demo-cybercrime-unit",
-        "name": "Demo Cybercrime Reporting Unit",
-        "handles": ["Cybercrime/Online Fraud", "Harassment"],
-        "integration": "demo",
-        "contact": "Configure a real cybercrime portal in production.",
-    },
-    {
-        "id": "demo-protection-unit",
-        "name": "Demo Women & Children Protection Unit",
-        "handles": ["Domestic Violence"],
-        "integration": "demo",
-        "contact": "Configure the real protection unit in production.",
-    },
-]
+# Case status workflow (PRD §8/§12 "Case tracking").
+CASE_STATUSES = ["Submitted", "Under Review", "Assigned", "Resolved", "Closed"]
+
+# Supported reporting languages (PRD FR-03, "Must" for the MVP).
+SUPPORTED_LANGUAGES = ["English", "Urdu", "Roman Urdu"]
+
+# Category-specific "must eventually cover" fields, layered on top of the
+# dynamic AI questionnaire as coverage guidance (never a rigid fixed form).
+# Kept generic per PRD's structured-report fields (time, location, objects,
+# people count, narrative) rather than any jurisdiction-specific checklist.
+_BASE_FIELDS = ["when", "where", "narrative_detail", "people_involved_count", "objects_involved"]
+CATEGORY_REQUIRED_FIELDS = {
+    "Theft / Pickpocketing": _BASE_FIELDS + ["items_taken", "suspect_description"],
+    "Robbery": _BASE_FIELDS + ["items_taken", "suspect_description", "weapon_involved"],
+    "Vehicle Theft": _BASE_FIELDS + ["vehicle_details", "registration_number"],
+    "Assault / Physical Harm": _BASE_FIELDS + ["injuries", "relationship_to_suspect"],
+    "Harassment": _BASE_FIELDS + ["nature_of_contact", "frequency", "relationship_to_suspect"],
+    "Domestic / Family Safety": _BASE_FIELDS + ["relationship_to_suspect", "injuries", "immediate_safety_risk"],
+    "Fraud / Scam": _BASE_FIELDS + ["method_used", "financial_loss"],
+    "Cybercrime": _BASE_FIELDS + ["platform_or_account", "financial_loss", "evidence_saved"],
+    "Missing Person": _BASE_FIELDS + ["physical_description", "last_seen_details"],
+    "Vandalism / Property Damage": _BASE_FIELDS + ["property_damaged", "estimated_cost"],
+    "Suspicious Activity": _BASE_FIELDS + ["activity_description", "suspect_description"],
+    "Drug-related Incident": _BASE_FIELDS + ["substance_description"],
+    "Other / Unclassified": _BASE_FIELDS,
+}
 
 # Configurable emergency numbers (demo-labeled; NOT a real dispatch integration).
-# Default is Pakistan's Police Helpline; override via .env for other regions.
 EMERGENCY_NUMBER = os.getenv("EMERGENCY_NUMBER", "15")
 
 DISCLAIMER = (
-    "Crime Report.AI provides AI-assisted reporting support. AI-generated "
-    "information may contain errors and should be reviewed by the user before "
-    "submission. The application does not replace emergency services, law "
-    "enforcement, legal professionals, or official reporting procedures."
+    "Crime Report provides AI-assisted reporting support. AI-generated "
+    "classifications, priority levels, and verification flags may contain "
+    "errors and are reviewed by an authorized human reviewer before any "
+    "action is taken. The application does not replace emergency services "
+    "or law enforcement, and does not determine guilt, innocence, or legal "
+    "liability."
 )
 
 
@@ -145,14 +138,3 @@ def llm_configured() -> bool:
 
 def pinecone_configured() -> bool:
     return bool(PINECONE_API_KEY)
-
-
-def encryption_configured() -> bool:
-    return bool(FIELD_ENCRYPTION_KEY)
-
-
-# Categories that carry real personal-safety risk if their reports are
-# browsed casually — any read of one of these goes through the audited
-# access path (database.database.get_report_audited) instead of a plain
-# lookup (FIR spec §4.4).
-SENSITIVE_CATEGORIES = ["Domestic Violence", "Harassment"]

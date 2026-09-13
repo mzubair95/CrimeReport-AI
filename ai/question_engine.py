@@ -23,22 +23,31 @@ def next_question(
     known_facts: dict,
     qa_history: list[dict],
     rag_context: str = "",
+    language: str = "English",
 ) -> QuestionnaireStep:
     """
     known_facts: dict of field -> value already collected (may contain nulls).
     qa_history: list of {"question": str, "answer": str} already asked/answered.
     rag_context: relevant snippets retrieved from Pinecone about what this
                  crime type's report normally requires.
+    language: "English" | "Urdu" | "Roman Urdu" (PRD FR-03) — the question
+              text and options are generated in this language so a Roman
+              Urdu speaker isn't suddenly handed an English form.
     """
     if len(qa_history) >= MAX_QUESTIONS:
         return QuestionnaireStep(complete=True, missing_information=[], next_question=None)
 
-    required_fields = CATEGORY_REQUIRED_FIELDS.get(incident_type, CATEGORY_REQUIRED_FIELDS["Other"])
+    required_fields = CATEGORY_REQUIRED_FIELDS.get(
+        incident_type, CATEGORY_REQUIRED_FIELDS["Other / Unclassified"])
 
     prompt = f"""You are helping a crime victim/witness complete an incident report
 through a short, adaptive interview. Ask at most ONE next question — the single
 most important missing piece of information — using large-button-friendly
 options where possible so it's fast to answer on a phone during a stressful moment.
+
+Write the "question" and "options" text in {language}. If {language} is
+"Roman Urdu", write Urdu using Latin letters (e.g. "Yeh kahan hua?"), not the
+Urdu script and not English.
 
 Incident type (may be "Other" or unknown): {incident_type}
 Original description from the user: \"\"\"{original_description}\"\"\"

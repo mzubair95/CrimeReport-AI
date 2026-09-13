@@ -55,6 +55,11 @@ class ImageAnalysis(BaseModel):
     people_visible: bool = False
     text_visible: bool = False
     notes: str = ""
+    # PRD "Privacy Detection" AI module — flags for the *reviewer*, not an
+    # accusation about anyone; a face detected here doesn't identify a person.
+    id_document_visible: bool = False
+    phone_number_visible: bool = False
+    relevant_to_incident: Optional[bool] = None  # PRD "Evidence Relevance" module
 
 
 class VideoAnalysis(BaseModel):
@@ -63,6 +68,28 @@ class VideoAnalysis(BaseModel):
     visible_items: list[str] = Field(default_factory=list)
     people_visible: bool = False
     notes: str = ""
+
+
+class SeverityAssessment(BaseModel):
+    """PRD §11 — urgency/severity triage. The reason is shown to the reviewer
+    so the priority is explainable, never an opaque score (NFR "Explainability")."""
+    severity: Literal["Critical", "High", "Medium", "Low"]
+    reason: str = ""
+
+
+class VerificationFlag(BaseModel):
+    """PRD 'Verification flags' (consistency/duplicate/abuse) — always
+    neutral, non-accusatory wording per the UX spec (§14): 'Needs Review' /
+    'Information Inconsistent', never 'You are lying'."""
+    flag_type: Literal["inconsistency", "low_detail", "unusual_pattern"]
+    message: str
+    severity: Literal["info", "warning"] = "info"
+
+
+class ConsistencyReview(BaseModel):
+    """Output of the consistency engine — a list of flags, empty if nothing
+    stood out. An LLM call, but never asserts a report is false."""
+    flags: list[VerificationFlag] = Field(default_factory=list)
 
 
 def safe_validate(model_cls, data) -> Optional[BaseModel]:

@@ -1,6 +1,6 @@
 """
-Crime reporting interface (sections 6-10): combine text, voice, photo, and
-video into one incident description, then hand off to classification + RAG
+Crime reporting interface: combine text, voice, photo, and video into one
+incident description, then hand off to classification + urgency assessment
 + the dynamic questionnaire.
 """
 from __future__ import annotations
@@ -11,10 +11,12 @@ import streamlit as st
 
 from ai import llm as gemini  # routed through ai/llm.py — backend set by LLM_PROVIDER
 from ai.classifier import extract_incident_facts, classify_incident
+from ai.urgency import assess_severity
 from input.voice import transcribe_audio
 from input.image import process_image
 from input.video import process_video
 from rag.retriever import retrieve_context
+from config.settings import SUPPORTED_LANGUAGES
 from ui.components import brand_header, go_to, progress_bar
 from ui.state import draft
 
@@ -29,8 +31,15 @@ def render():
         go_to("category_select")
         return
 
-    progress_bar(3, 8, "Step 3 of 8 — Tell us what happened")
+    progress_bar(2, 5, "Step 2 of 5 — Tell us what happened")
     st.markdown(f"**Category:** {d['category']}")
+
+    d["language"] = st.selectbox(
+        "Language", SUPPORTED_LANGUAGES,
+        index=SUPPORTED_LANGUAGES.index(d.get("language", "English")),
+        help="Follow-up questions will be asked in this language.",
+    )
+
     st.markdown("### How would you like to report?")
     st.caption("Use one or combine several — voice, a photo, and text together works great.")
 
@@ -43,7 +52,8 @@ def render():
             "Describe what happened...",
             value=st.session_state.get("typed_description", ""),
             height=140,
-            placeholder="e.g. Someone stole my phone from my car last night.",
+            placeholder="e.g. Someone stole my phone from my car last night. / "
+                        "Meri bike kal market se chori ho gai thi.",
             key="typed_description",
         )
 
@@ -123,16 +133,20 @@ def _handle_continue(photos_files, video_file):
             icon="⚠️",
         )
 
+    description = " ".join(combined_parts).strip()
+
     evidence = []
     with st.spinner("Analyzing evidence..."):
         for f in (photos_files or []):
             try:
-                analysis = process_image(f.getvalue(), f.name)
+                analysis = process_image(f.getvalue(), f.name, incident_context=description)
                 note = _format_image_note(analysis)
+                privacy_flags = _privacy_flags(analysis)
             except Exception:
                 logger.exception("Image analysis failed for %s", f.name)
-                note = "AI analysis unavailable for this image."
-            evidence.append({"name": f.name, "type": "image", "ai_analysis": note})
+                note, privacy_flags = "AI analysis unavailable for this image.", []
+            evidence.append({"name": f.name, "type": "image", "ai_analysis": note,
+                              "privacy_flags": privacy_flags})
             methods_used.append("image")
 
         if video_file is not None:
@@ -142,10 +156,10 @@ def _handle_continue(photos_files, video_file):
             except Exception:
                 logger.exception("Video analysis failed for %s", video_file.name)
                 note = "AI analysis unavailable for this video."
-            evidence.append({"name": video_file.name, "type": "video", "ai_analysis": note})
+            evidence.append({"name": video_file.name, "type": "video", "ai_analysis": note,
+                              "privacy_flags": []})
             methods_used.append("video")
 
-    description = " ".join(combined_parts).strip()
     if not description and evidence:
         description = "No written description provided; see AI-analyzed evidence below."
 
@@ -171,9 +185,15 @@ def _handle_continue(photos_files, video_file):
         except Exception:
             logger.exception("RAG retrieval failed")
 
-    # d["category"] (Step 1, user-selected) stays canonical for routing/legal
-    # lookup/required-fields; the AI classification is stored separately as a
-    # confirmation/override *signal* only (surfaced in the questionnaire UI).
+        try:
+            severity_result = assess_severity(d["category"], description, facts.model_dump() if facts else {})
+        except Exception:
+            logger.exception("Severity assessment failed")
+            severity_result = None
+
+    # d["category"] (user-selected) stays canonical for the required-fields
+    # checklist and dashboard grouping; the AI classification is stored
+    # separately as a confirmation/override *signal* only.
     d["description"] = description
     d["input_methods_used"] = sorted(set(methods_used))
     d["facts"] = facts.model_dump() if facts else {}
@@ -185,6 +205,9 @@ def _handle_continue(photos_files, video_file):
     d["location"] = d["facts"].get("location")
     d["incident_date"] = d["facts"].get("date")
     d["incident_time"] = d["facts"].get("time")
+    if severity_result:
+        d["severity"] = severity_result.severity
+        d["severity_reason"] = severity_result.reason
 
     go_to("questionnaire")
 
@@ -196,6 +219,19 @@ def _format_image_note(analysis) -> str:
     if analysis.visible_damage:
         parts.append(f"Damage noted: {analysis.visible_damage}")
     parts.append("People visible" if analysis.people_visible else "No people clearly visible")
+    if analysis.relevant_to_incident is False:
+        parts.append("⚠️ May not be related to this incident")
     if analysis.notes:
         parts.append(analysis.notes)
     return "; ".join(parts)
+
+
+def _privacy_flags(analysis) -> list[str]:
+    flags = []
+    if analysis.id_document_visible:
+        flags.append("ID document visible — consider redacting before wider sharing")
+    if analysis.phone_number_visible:
+        flags.append("Phone number visible — consider redacting before wider sharing")
+    if analysis.people_visible:
+        flags.append("Face(s) detected")
+    return flags

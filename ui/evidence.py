@@ -1,11 +1,10 @@
 """
-Evidence management (section 18) + reporter information (section 21).
-Original evidence files are never altered — AI analysis is stored alongside,
-never in place of, the original.
+Evidence management + reporter information. Original evidence files are
+never altered — AI analysis (including privacy flags) is stored alongside,
+never in place of, the original. Anonymous reporting (PRD FR-11, "Should")
+is offered directly here.
 """
 from __future__ import annotations
-
-import re
 
 import streamlit as st
 
@@ -16,20 +15,11 @@ from ui.components import brand_header, go_to, progress_bar
 from ui.state import draft
 
 CONTACT_METHODS = ["Email", "Phone", "Either"]
-_CNIC_DIGITS_RE = re.compile(r"^\d{13}$")
-
-
-def _normalize_cnic(raw: str) -> str:
-    return re.sub(r"[^0-9]", "", raw or "")
-
-
-def _is_valid_cnic(raw: str) -> bool:
-    return bool(_CNIC_DIGITS_RE.match(_normalize_cnic(raw)))
 
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(5, 8, "Step 5 of 8 — Evidence & your contact info")
+    progress_bar(4, 5, "Step 4 of 5 — Evidence & your contact info")
 
     d = draft()
 
@@ -40,6 +30,8 @@ def render():
             st.markdown(f"✓ {icon} **{e['name']}**")
             if e.get("ai_analysis"):
                 st.caption(f"AI-analyzed (not confirmed fact): {e['ai_analysis']}")
+            for flag in e.get("privacy_flags", []):
+                st.caption(f"🔒 {flag}")
     else:
         st.caption("No evidence attached yet.")
 
@@ -55,42 +47,52 @@ def render():
 
     st.divider()
     st.markdown("### Your Information")
-    st.caption("Only what's needed to follow up with you. Never share passwords or "
-               "banking details here.")
-    victim = d.get("victim", {})
-    with st.form("victim_form", border=False):
-        full_name = st.text_input("Full name", value=victim.get("full_name", ""))
-        cnic = st.text_input("CNIC", value=victim.get("cnic", ""),
-                              placeholder="12345-1234567-1")
-        st.caption("🔒 Encrypted before storage — required for an FIR, since it's how "
-                   "the police verify who filed the report.")
-        phone = st.text_input("Phone number", value=victim.get("phone", ""))
-        email = st.text_input("Email", value=victim.get("email", ""))
-        address = st.text_input("Address (optional)", value=victim.get("address", ""))
-        preferred = st.radio("Preferred contact method", CONTACT_METHODS,
-                              index=CONTACT_METHODS.index(victim.get("preferred_contact", "Email"))
-                              if victim.get("preferred_contact") in CONTACT_METHODS else 0,
-                              horizontal=True)
-        consent = st.checkbox(
-            "I confirm the information I've provided is accurate to the best of my "
-            "knowledge, and I consent to this report being submitted for review.",
-            value=victim.get("consent", False),
-        )
-        submitted = st.form_submit_button("Continue →", type="primary", use_container_width=True)
 
-    if submitted:
-        if not (full_name and (phone or email)):
-            st.error("Please provide your name and at least one way to reach you.")
-        elif not _is_valid_cnic(cnic):
-            st.error("Please enter a valid 13-digit CNIC (e.g. 12345-1234567-1).")
+    anonymous = st.checkbox(
+        "Report anonymously",
+        value=d.get("anonymous", False),
+        help="Skip providing your name/contact details. An authorized reviewer can still "
+             "triage this report, but won't be able to follow up with you directly.",
+        key="anonymous_toggle",
+    )
+    d["anonymous"] = anonymous
+
+    reporter = d.get("reporter", {})
+    if anonymous:
+        st.caption("No name, phone, or email will be collected for this report.")
+        full_name = phone = email = address = ""
+        preferred = "Email"
+    else:
+        st.caption("Only what's needed to follow up with you. Never share passwords or "
+                   "banking details here.")
+        full_name = st.text_input("Full name", value=reporter.get("full_name", ""))
+        phone = st.text_input("Phone number", value=reporter.get("phone", ""))
+        email = st.text_input("Email", value=reporter.get("email", ""))
+        address = st.text_input("Address (optional)", value=reporter.get("address", ""))
+        preferred = st.radio("Preferred contact method", CONTACT_METHODS,
+                              index=CONTACT_METHODS.index(reporter.get("preferred_contact", "Email"))
+                              if reporter.get("preferred_contact") in CONTACT_METHODS else 0,
+                              horizontal=True)
+
+    consent = st.checkbox(
+        "I confirm the information I've provided is accurate to the best of my "
+        "knowledge, and I consent to this report being submitted for review.",
+        value=reporter.get("consent", False) or d.get("_consent_given", False),
+        key="consent_checkbox",
+    )
+
+    if st.button("Continue →", type="primary", use_container_width=True):
+        if not anonymous and not (full_name and (phone or email)):
+            st.error("Please provide your name and at least one way to reach you, "
+                     "or check \"Report anonymously\".")
         elif not consent:
             st.error("Please confirm the consent checkbox to continue.")
         else:
-            d["victim"] = {
-                "full_name": full_name, "cnic": _normalize_cnic(cnic),
-                "phone": phone, "email": email,
+            d["reporter"] = {} if anonymous else {
+                "full_name": full_name, "phone": phone, "email": email,
                 "address": address, "preferred_contact": preferred, "consent": True,
             }
+            d["_consent_given"] = True
             go_to("review")
 
     if st.button("⬅️ Back", use_container_width=True):
@@ -102,15 +104,21 @@ def _process_extra_files(files):
     with st.spinner("Analyzing attached files..."):
         for f in files:
             ext = f.name.rsplit(".", 1)[-1].lower()
-            entry = {"name": f.name, "type": "document", "ai_analysis": ""}
+            entry = {"name": f.name, "type": "document", "ai_analysis": "", "privacy_flags": []}
             try:
                 if ext in ("jpg", "jpeg", "png", "webp"):
                     entry["type"] = "image"
-                    analysis = process_image(f.getvalue(), f.name)
+                    analysis = process_image(f.getvalue(), f.name, incident_context=d.get("description", ""))
                     entry["ai_analysis"] = "; ".join(filter(None, [
                         "Visible: " + ", ".join(analysis.visible_items) if analysis.visible_items else "",
                         analysis.visible_damage or "",
                     ])) or "No notable details detected."
+                    if analysis.id_document_visible:
+                        entry["privacy_flags"].append("ID document visible — consider redacting")
+                    if analysis.phone_number_visible:
+                        entry["privacy_flags"].append("Phone number visible — consider redacting")
+                    if analysis.people_visible:
+                        entry["privacy_flags"].append("Face(s) detected")
                 elif ext in ("mp4", "mov"):
                     entry["type"] = "video"
                     v = process_video(f.getvalue(), f.name)
