@@ -17,7 +17,7 @@ logger = logging.getLogger("crime_report_ai.ui.review")
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(4, 5, "Step 4 of 5 — Review your report")
+    progress_bar(5, 6, "Step 5 of 6 — Review your report")
 
     d = draft()
 
@@ -33,7 +33,7 @@ def render():
 
     card(f"""
         <b>Incident</b><br>
-        Type: {d.get('crime_type') or 'Not classified'}<br>
+        Type: {d.get('category') or d.get('crime_type') or 'Not classified'}<br>
         Date: {d.get('incident_date') or 'Not provided'}<br>
         Time: {d.get('incident_time') or 'Not provided'}<br>
         Location: {d.get('location') or 'Not provided'}

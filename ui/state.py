@@ -7,10 +7,12 @@ from __future__ import annotations
 import streamlit as st
 
 DEFAULT_DRAFT = {
+    "category": None,               # Step 1 user-selected category — canonical for
+                                     # routing/legal-lookup/required-fields checklist
     "description": "",              # raw combined user text (typed + transcribed)
     "input_methods_used": [],       # ["text", "voice", "image", "video"]
     "facts": {},                    # IncidentExtraction fields
-    "crime_type": None,
+    "crime_type": None,             # AI-suggested category — confirmation/override signal only
     "classification_confidence": None,
     "classification_explanation": "",
     "rag_context": "",

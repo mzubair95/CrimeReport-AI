@@ -14,7 +14,8 @@ from database.database import init_db, create_report, get_report, submit_report,
 SAMPLE_REPORT = {
     "description": "My car window was broken and my phone was stolen.",
     "summary": "The user reports their vehicle window was broken and a phone was taken.",
-    "crime_type": "Theft",
+    "category": "Robbery/Theft",  # Step 1 user-selected, canonical
+    "crime_type": "Robbery/Theft",  # AI-suggested signal, same here
     "confidence": 0.8,
     "incident_date": "2026-09-12",
     "incident_time": "21:00",
@@ -30,7 +31,7 @@ def test_json_export_roundtrip():
     payload = to_json(SAMPLE_REPORT, "CR-2026-000001")
     data = json.loads(payload)
     assert data["report_id"] == "CR-2026-000001"
-    assert data["crime_type"] == "Theft"
+    assert data["category"] == "Robbery/Theft"
 
 
 def test_pdf_generation_produces_bytes():
@@ -49,7 +50,8 @@ def test_database_create_and_fetch(tmp_path, monkeypatch):
     assert result["report_id"].startswith("CR-")
     fetched = get_report(result["report_id"])
     assert fetched is not None
-    assert fetched["crime_type"] == "Theft"
+    assert fetched["category"] == "Robbery/Theft"
+    assert result["authority_name"] == "Demo Local Police Department (non-emergency)"
     stats = dashboard_stats()
     assert stats["total"] >= 1
 

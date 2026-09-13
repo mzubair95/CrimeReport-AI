@@ -23,11 +23,16 @@ logger = logging.getLogger("crime_report_ai.ui.report")
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(1, 5, "Step 1 of 5 — Tell us what happened")
+    d = draft()
+
+    if not d.get("category"):
+        go_to("category_select")
+        return
+
+    progress_bar(2, 6, "Step 2 of 6 — Tell us what happened")
+    st.markdown(f"**Category:** {d['category']}")
     st.markdown("### How would you like to report?")
     st.caption("Use one or combine several — voice, a photo, and text together works great.")
-
-    d = draft()
 
     tab_text, tab_voice, tab_photo, tab_video = st.tabs(
         ["⌨️ Type it", "🎤 Speak", "📷 Photo", "🎥 Video"]
@@ -87,8 +92,8 @@ def render():
         _handle_continue(photos_files=photos, video_file=video)
 
     st.write("")
-    if st.button("⬅️ Back to Home", use_container_width=True):
-        go_to("home")
+    if st.button("⬅️ Change Category", use_container_width=True):
+        go_to("category_select")
 
 
 def _handle_continue(photos_files, video_file):
@@ -145,11 +150,15 @@ def _handle_continue(photos_files, video_file):
         description = "No written description provided; see AI-analyzed evidence below."
 
     with st.spinner("Understanding your report..."):
+        evidence_notes = " ".join(e.get("ai_analysis", "") for e in evidence)
+        classify_context = f"The user already selected the category '{d['category']}' " \
+                            f"from a fixed list before describing the incident — treat this " \
+                            f"as a strong prior and only suggest a different category if the " \
+                            f"description clearly contradicts it. {evidence_notes}"
         try:
             facts = extract_incident_facts(description) if description else None
             classification = classify_incident(
-                description,
-                extra_context=" ".join(e.get("ai_analysis", "") for e in evidence),
+                description, extra_context=classify_context,
             ) if description else None
         except gemini.LLMUnavailable:
             facts, classification = None, None
@@ -158,11 +167,13 @@ def _handle_continue(photos_files, video_file):
 
         rag_context = ""
         try:
-            if classification:
-                rag_context = retrieve_context(description, category=None)
+            rag_context = retrieve_context(description or d["category"])
         except Exception:
             logger.exception("RAG retrieval failed")
 
+    # d["category"] (Step 1, user-selected) stays canonical for routing/legal
+    # lookup/required-fields; the AI classification is stored separately as a
+    # confirmation/override *signal* only (surfaced in the questionnaire UI).
     d["description"] = description
     d["input_methods_used"] = sorted(set(methods_used))
     d["facts"] = facts.model_dump() if facts else {}

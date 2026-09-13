@@ -13,7 +13,7 @@ def render():
     st.write("")
     if st.button("🚨  REPORT A CRIME", type="primary", use_container_width=True):
         reset_draft()
-        go_to("report")
+        go_to("category_select")
 
     col1, col2 = st.columns(2)
     with col1:

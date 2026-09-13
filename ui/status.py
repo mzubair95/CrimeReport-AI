@@ -34,7 +34,7 @@ def render():
                 card(f"""
                     <b>Report ID:</b> {report['report_id']}<br>
                     <b>Status:</b> <span class="crai-badge {badge}">{report['status']}</span><br>
-                    <b>Type:</b> {report.get('crime_type') or 'Unclassified'}<br>
+                    <b>Type:</b> {report.get('category') or report.get('crime_type') or 'Unclassified'}<br>
                     <b>Submitted:</b> {report['created_at'][:19].replace('T', ' ')} UTC<br>
                     <b>Routed to:</b> {report.get('authority_name') or 'Demo backend'}
                 """)

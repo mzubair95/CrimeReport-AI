@@ -18,14 +18,19 @@ logger = logging.getLogger("crime_report_ai.ui.questionnaire")
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(2, 5, "Step 2 of 5 — A few quick questions")
+    progress_bar(3, 6, "Step 3 of 6 — A few quick questions")
 
     d = draft()
 
-    if d["crime_type"]:
-        st.markdown(f"**Likely category:** {d['crime_type']}  "
-                    f"<span class='crai-badge crai-ai'>AI-suggested, not confirmed</span>",
-                    unsafe_allow_html=True)
+    if not d.get("category"):
+        go_to("category_select")
+        return
+
+    st.markdown(f"**Category:** {d['category']}")
+    if d["crime_type"] and d["crime_type"] != d["category"]:
+        st.caption(f"🤖 AI note: based on your description, this might instead be "
+                   f"**{d['crime_type']}** — your selected category is still what's used "
+                   f"below; change it on the previous step if you agree with the AI.")
 
     if "current_question" not in st.session_state or st.session_state.get("_need_next_q", True):
         _load_next_question()
@@ -101,7 +106,7 @@ def _load_next_question():
     d = draft()
     try:
         step = next_question(
-            incident_type=d.get("crime_type") or "Other",
+            incident_type=d.get("category") or "Other",
             original_description=d.get("description", ""),
             known_facts=d.get("facts", {}),
             qa_history=d.get("qa_history", []),

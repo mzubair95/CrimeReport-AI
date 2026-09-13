@@ -74,7 +74,7 @@ def to_pdf(report: dict, report_id: str) -> bytes:
 
     story.append(Paragraph("Incident", styles["SectionHeading"]))
     story.append(_field_table([
-        ("Type", report.get("crime_type")),
+        ("Type", report.get("category") or report.get("crime_type")),
         ("Date", report.get("incident_date")),
         ("Time", report.get("incident_time")),
         ("Location", report.get("location")),

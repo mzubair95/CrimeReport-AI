@@ -55,12 +55,30 @@ for _d in (DATA_DIR, UPLOADS_DIR, REPORTS_DIR, DB_DIR):
 
 DB_PATH = DB_DIR / "crime_report.sqlite3"
 
-# Controlled classification categories (section 11)
+# Controlled classification categories (section 11), aligned to the Step 1
+# tappable categories in docs/FIR_TECHNICAL_SPEC.md. The user picks one of
+# these first; the AI classifier (ai/classifier.py) then acts as a
+# confirmation/override signal rather than the primary driver.
 CRIME_CATEGORIES = [
-    "Theft", "Robbery", "Burglary", "Assault", "Harassment", "Threat",
-    "Fraud", "Cybercrime", "Missing Person", "Vandalism",
-    "Domestic Incident", "Property Damage", "Other",
+    "Robbery/Theft", "Kidnapping", "Assault", "Cybercrime/Online Fraud",
+    "Harassment", "Domestic Violence", "Vehicle Theft", "Other",
 ]
+
+# Category-specific "must eventually cover" fields (spec §4.3). The dynamic
+# questionnaire engine (ai/question_engine.py) passes these to the LLM as
+# guidance so the adaptive conversation still reliably covers what/when/
+# where/who/suspect/witnesses/losses-injuries per category, without turning
+# it into a rigid fixed form.
+CATEGORY_REQUIRED_FIELDS = {
+    "Robbery/Theft": ["what_taken", "when", "where", "suspect_description", "witnesses", "value_lost"],
+    "Kidnapping": ["who_taken", "when", "where_last_seen", "suspect_description", "witnesses", "demands_made"],
+    "Assault": ["who_involved", "when", "where", "injuries", "witnesses", "weapon_involved"],
+    "Cybercrime/Online Fraud": ["platform_or_account", "when", "financial_loss", "suspect_info", "evidence_saved"],
+    "Harassment": ["nature_of_contact", "frequency", "relationship_to_suspect", "witnesses"],
+    "Domestic Violence": ["relationship_to_suspect", "when", "injuries", "immediate_safety_risk", "prior_incidents"],
+    "Vehicle Theft": ["vehicle_details", "when", "where", "registration_number", "witnesses"],
+    "Other": ["what", "when", "where", "who"],
+}
 
 # Configurable authority layer (section 12/23) — informational only for the MVP.
 # A real deployment would populate each authority's actual submission endpoint.
@@ -68,29 +86,29 @@ AUTHORITIES = [
     {
         "id": "demo-local-police",
         "name": "Demo Local Police Department (non-emergency)",
-        "handles": ["Theft", "Robbery", "Burglary", "Assault", "Vandalism",
-                    "Domestic Incident", "Property Damage", "Other"],
+        "handles": ["Robbery/Theft", "Vehicle Theft", "Assault", "Kidnapping", "Other"],
         "integration": "demo",  # "demo" = no real agency is connected
         "contact": "Configure a real non-emergency line in production.",
     },
     {
         "id": "demo-cybercrime-unit",
         "name": "Demo Cybercrime Reporting Unit",
-        "handles": ["Cybercrime", "Fraud", "Harassment", "Threat"],
+        "handles": ["Cybercrime/Online Fraud", "Harassment"],
         "integration": "demo",
         "contact": "Configure a real cybercrime portal in production.",
     },
     {
-        "id": "demo-missing-persons",
-        "name": "Demo Missing Persons Unit",
-        "handles": ["Missing Person"],
+        "id": "demo-protection-unit",
+        "name": "Demo Women & Children Protection Unit",
+        "handles": ["Domestic Violence"],
         "integration": "demo",
-        "contact": "Configure the real missing-persons unit in production.",
+        "contact": "Configure the real protection unit in production.",
     },
 ]
 
-# Configurable emergency numbers (demo-labeled; NOT a real dispatch integration)
-EMERGENCY_NUMBER = os.getenv("EMERGENCY_NUMBER", "911")
+# Configurable emergency numbers (demo-labeled; NOT a real dispatch integration).
+# Default is Pakistan's Police Helpline; override via .env for other regions.
+EMERGENCY_NUMBER = os.getenv("EMERGENCY_NUMBER", "15")
 
 DISCLAIMER = (
     "Crime Report.AI provides AI-assisted reporting support. AI-generated "

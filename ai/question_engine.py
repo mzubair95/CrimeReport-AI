@@ -12,6 +12,7 @@ import json
 
 from ai import llm as gemini  # routed through ai/llm.py — backend set by LLM_PROVIDER
 from ai.schemas import QuestionnaireStep, Question, safe_validate
+from config.settings import CATEGORY_REQUIRED_FIELDS
 
 MAX_QUESTIONS = 8  # hard cap so a stressed user is never stuck answering forever
 
@@ -32,6 +33,8 @@ def next_question(
     if len(qa_history) >= MAX_QUESTIONS:
         return QuestionnaireStep(complete=True, missing_information=[], next_question=None)
 
+    required_fields = CATEGORY_REQUIRED_FIELDS.get(incident_type, CATEGORY_REQUIRED_FIELDS["Other"])
+
     prompt = f"""You are helping a crime victim/witness complete an incident report
 through a short, adaptive interview. Ask at most ONE next question — the single
 most important missing piece of information — using large-button-friendly
@@ -46,17 +49,23 @@ Facts already known (null/omitted = not yet known):
 Questions already asked and answered so far:
 {json.dumps(qa_history, indent=2)}
 
+For this incident type, a complete report should eventually cover these
+points (not necessarily in this order, and not every one needs its own
+question if the description already covers it):
+{json.dumps(required_fields, indent=2)}
+
 Relevant guidance on what this type of report typically requires (from our
 knowledge base, may be empty):
 \"\"\"{rag_context}\"\"\"
 
 Rules:
-- Do NOT re-ask something already answered.
+- Do NOT re-ask something already answered — check qa_history carefully first.
 - Prefer single_choice/boolean/date/time/location/number question types with
   short concrete "options" over open-ended "text" so the user can tap a button.
-- Stop and mark complete:true once you have enough to write a useful report:
-  roughly what happened, when, where, and whether anyone was hurt. Do not
-  interrogate for unnecessary detail.
+- Stop and mark complete:true once the checklist above is reasonably covered
+  (skip a point entirely if the description/evidence already answers it —
+  don't ask again just to double-confirm). Do not interrogate for
+  unnecessary detail beyond the checklist.
 - Never ask for passwords, banking details, or unrelated personal data.
 
 Return ONLY JSON matching exactly:

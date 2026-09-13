@@ -16,7 +16,7 @@ def render():
 
     card(f"""
         <b>If you are in immediate danger, this app cannot help you directly.</b><br><br>
-        Call <b>{EMERGENCY_NUMBER}</b> (or your local emergency number) right now.
+        Call <b>Police Helpline {EMERGENCY_NUMBER}</b> (or your local emergency number) right now.
     """)
 
     st.markdown(
@@ -24,7 +24,7 @@ def render():
         f'style="text-decoration:none;">'
         f'<button style="width:100%;min-height:3.4rem;font-size:1.15rem;'
         f'font-weight:700;border-radius:14px;border:none;background:{RED_DEEP};'
-        f'color:white;">📞 CALL EMERGENCY SERVICES ({EMERGENCY_NUMBER})</button>'
+        f'color:white;">📞 CALL POLICE HELPLINE {EMERGENCY_NUMBER}</button>'
         f'</a></div>',
         unsafe_allow_html=True,
     )
@@ -38,7 +38,7 @@ def render():
                   help="Continue into the AI-guided reporting flow quietly, "
                        "without a phone call — for when calling isn't safe."):
         reset_draft()
-        go_to("report")
+        go_to("category_select")
 
     st.write("")
     if st.button("⬅️  EXIT", use_container_width=True):

@@ -26,10 +26,12 @@ PAGE_RENDERERS = {}
 
 def _load_pages():
     """Import page modules lazily so a single broken page can't crash routing."""
-    from ui import home, emergency, report, questionnaire, evidence, review, submitted, status, dashboard, about
+    from ui import (home, emergency, category_select, report, questionnaire, evidence,
+                     review, submitted, status, dashboard, about)
     PAGE_RENDERERS.update({
         "home": home.render,
         "emergency": emergency.render,
+        "category_select": category_select.render,
         "report": report.render,
         "questionnaire": questionnaire.render,
         "evidence": evidence.render,

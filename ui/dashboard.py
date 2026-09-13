@@ -21,7 +21,7 @@ def render():
     st.write("")
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("**Reports by Crime Type**")
+        st.markdown("**Reports by Category**")
         if stats["by_type"]:
             st.bar_chart(stats["by_type"])
         else:
@@ -38,7 +38,8 @@ def render():
     reports = list_reports(limit=25)
     if reports:
         st.dataframe(
-            [{"Report ID": r["report_id"], "Crime Type": r.get("crime_type") or "Unclassified",
+            [{"Report ID": r["report_id"],
+              "Category": r.get("category") or r.get("crime_type") or "Unclassified",
               "Date": r["created_at"][:10], "Status": r["status"]} for r in reports],
             use_container_width=True, hide_index=True,
         )

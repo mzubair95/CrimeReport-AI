@@ -34,6 +34,7 @@ def init_db() -> None:
                 report_id TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL,
                 status TEXT NOT NULL,
+                category TEXT,
                 crime_type TEXT,
                 confidence REAL,
                 incident_date TEXT,
@@ -55,6 +56,10 @@ def init_db() -> None:
                 counter INTEGER NOT NULL
             )
         """)
+        # Lightweight migration for demo DBs created before `category` existed.
+        existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(reports)")}
+        if "category" not in existing_cols:
+            conn.execute("ALTER TABLE reports ADD COLUMN category TEXT")
 
 
 def _next_report_id() -> str:
@@ -77,14 +82,14 @@ def create_report(report: dict) -> str:
     with _lock, _connect() as conn:
         conn.execute("""
             INSERT INTO reports (
-                report_id, created_at, status, crime_type, confidence,
+                report_id, created_at, status, category, crime_type, confidence,
                 incident_date, incident_time, location, description, summary,
                 authority_id, authority_name, facts_json, qa_history_json,
                 evidence_json, victim_json
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             report_id, now, "RECEIVED",
-            report.get("crime_type"), report.get("confidence"),
+            report.get("category"), report.get("crime_type"), report.get("confidence"),
             report.get("incident_date"), report.get("incident_time"),
             report.get("location"), report.get("description"), report.get("summary"),
             report.get("authority_id"), report.get("authority_name"),
@@ -127,7 +132,8 @@ def dashboard_stats() -> dict:
             "SELECT COUNT(*) c FROM reports WHERE status IN ('RECEIVED','SUBMITTED','IN_REVIEW')"
         ).fetchone()["c"]
         by_type = conn.execute(
-            "SELECT crime_type, COUNT(*) c FROM reports GROUP BY crime_type ORDER BY c DESC"
+            "SELECT COALESCE(category, crime_type) AS cat, COUNT(*) c FROM reports "
+            "GROUP BY cat ORDER BY c DESC"
         ).fetchall()
         by_date = conn.execute(
             "SELECT substr(created_at,1,10) d, COUNT(*) c FROM reports GROUP BY d ORDER BY d"
@@ -136,7 +142,7 @@ def dashboard_stats() -> dict:
         "total": total,
         "open": open_count,
         "submitted": submitted,
-        "by_type": {r["crime_type"] or "Unknown": r["c"] for r in by_type},
+        "by_type": {r["cat"] or "Unknown": r["c"] for r in by_type},
         "by_date": {r["d"]: r["c"] for r in by_date},
     }
 
@@ -152,8 +158,8 @@ def submit_report(report: dict) -> dict:
     """
     from config.settings import AUTHORITIES
 
-    crime_type = report.get("crime_type", "Other")
-    authority = next((a for a in AUTHORITIES if crime_type in a["handles"]), AUTHORITIES[0])
+    category = report.get("category") or report.get("crime_type", "Other")
+    authority = next((a for a in AUTHORITIES if category in a["handles"]), AUTHORITIES[0])
     report["authority_id"] = authority["id"]
     report["authority_name"] = authority["name"]
 

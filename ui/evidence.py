@@ -18,7 +18,7 @@ CONTACT_METHODS = ["Email", "Phone", "Either"]
 
 def render():
     brand_header(show_tagline=False)
-    progress_bar(3, 5, "Step 3 of 5 — Evidence & your contact info")
+    progress_bar(4, 6, "Step 4 of 6 — Evidence & your contact info")
 
     d = draft()
 
