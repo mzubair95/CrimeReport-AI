@@ -13,8 +13,9 @@ import logging
 import streamlit as st
 
 from ai.legal_service import get_false_reporting_notice
-from database.database import submit_report, save_confirmation
+from database.database import submit_report, save_confirmation, save_fir_document
 from reports.generator import to_json, to_pdf
+from reports.fir_template import to_fir_pdf, FIR_TEMPLATE_VERSION
 from ui.components import brand_header, go_to, progress_bar, card
 from ui.state import draft
 
@@ -74,10 +75,21 @@ def _submit(d: dict):
         try:
             result = submit_report(dict(d))
             report_id = result["report_id"]
-            save_confirmation(report_id, "false_reporting_notice")
-            save_confirmation(report_id, "accuracy_consent")
+            confirmed_at_1 = save_confirmation(report_id, "false_reporting_notice")
+            confirmed_at_2 = save_confirmation(report_id, "accuracy_consent")
+
+            # The FIR draft (Step 8) includes the confirmations just recorded —
+            # build that list in-memory rather than re-reading the DB.
+            fir_data = dict(d)
+            fir_data["confirmations"] = [
+                {"confirmation_type": "false_reporting_notice", "confirmed_at": confirmed_at_1},
+                {"confirmation_type": "accuracy_consent", "confirmed_at": confirmed_at_2},
+            ]
+
             pdf_bytes = to_pdf(d, report_id)
             json_str = to_json(d, report_id)
+            fir_pdf_bytes = to_fir_pdf(fir_data, report_id)
+            save_fir_document(report_id, fir_pdf_bytes, FIR_TEMPLATE_VERSION)
         except Exception:
             logger.exception("Report generation/submission failed")
             st.error("We're temporarily unable to generate your report. "
@@ -88,4 +100,5 @@ def _submit(d: dict):
     st.session_state.last_submission = result
     st.session_state.last_pdf_bytes = pdf_bytes
     st.session_state.last_json_str = json_str
+    st.session_state.last_fir_pdf_bytes = fir_pdf_bytes
     go_to("submitted")

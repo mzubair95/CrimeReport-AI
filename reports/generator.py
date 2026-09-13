@@ -125,6 +125,7 @@ def to_pdf(report: dict, report_id: str) -> bytes:
         story.append(Paragraph("Reporter Information", styles["SectionHeading"]))
         story.append(_field_table([
             ("Full name", victim.get("full_name")),
+            ("CNIC", victim.get("cnic")),
             ("Phone", victim.get("phone")),
             ("Email", victim.get("email")),
             ("Address", victim.get("address")),

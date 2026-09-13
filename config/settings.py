@@ -42,6 +42,11 @@ EMBEDDING_DIMENSION = 384  # all-MiniLM-L6-v2 output size; update if provider ch
 # accepts raw audio the way Gemini does. "" disables transcription gracefully.
 WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")
 
+# Field-level encryption key for sensitive PII (currently: CNIC) — see
+# security/encryption.py and FIR spec §4.4. Generate one with:
+#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", "")
+
 # ---- App-level config ----
 APP_NAME = "Crime Report.AI"
 APP_TAGLINE = "Report what happened. Let AI guide the rest."
@@ -140,3 +145,14 @@ def llm_configured() -> bool:
 
 def pinecone_configured() -> bool:
     return bool(PINECONE_API_KEY)
+
+
+def encryption_configured() -> bool:
+    return bool(FIELD_ENCRYPTION_KEY)
+
+
+# Categories that carry real personal-safety risk if their reports are
+# browsed casually — any read of one of these goes through the audited
+# access path (database.database.get_report_audited) instead of a plain
+# lookup (FIR spec §4.4).
+SENSITIVE_CATEGORIES = ["Domestic Violence", "Harassment"]

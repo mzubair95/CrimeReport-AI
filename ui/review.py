@@ -66,9 +66,12 @@ def render():
             go_to("legal_lookup")
 
     victim = d.get("victim", {})
+    cnic = victim.get("cnic", "")
+    cnic_masked = f"•••••-•••••••-{cnic[-1]}" if cnic else "N/A"
     card(f"""
         <b>Personal Information</b><br>
         {victim.get('full_name', 'N/A')}<br>
+        CNIC: {cnic_masked} <span style="font-size:0.8rem; color:#94A3B8;">(shown in full on your downloaded report only)</span><br>
         {victim.get('phone', '')} {('· ' + victim.get('email')) if victim.get('email') else ''}
     """)
 

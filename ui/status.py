@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from database.database import get_report
+from database.database import get_report_audited
 from ui.components import brand_header, go_to, card
 
 STATUS_COLORS = {
@@ -26,7 +26,10 @@ def render():
         if not report_id_clean:
             st.error("Please enter a report ID.")
         else:
-            report = get_report(report_id_clean)
+            # Sensitive categories (Domestic Violence, Harassment) get an
+            # audit_log entry on every lookup (FIR spec §4.4); other
+            # categories pass through untouched.
+            report = get_report_audited(report_id_clean, actor="user")
             if not report:
                 st.error("No report found with that ID. Double-check and try again.")
             else:
